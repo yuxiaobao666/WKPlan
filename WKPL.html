@@ -467,7 +467,7 @@
             padding: 5px 8px;
         }
 
-        /* ===== 模态框 - 优化版 ===== */
+        /* ===== 模态框 ===== */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -565,73 +565,6 @@
             font-weight: 500;
         }
 
-        .cycle-layout {
-            display: grid;
-            grid-template-columns: 1fr 1.6fr;
-            gap: 16px;
-        }
-        @media (max-width: 700px) {
-            .cycle-layout {
-                grid-template-columns: 1fr;
-            }
-        }
-        .cycle-form {
-            background: #f8fafc;
-            padding: 16px;
-            border-radius: 12px;
-        }
-        .cycle-form .field {
-            margin-bottom: 10px;
-        }
-        .cycle-form .field:last-child {
-            margin-bottom: 0;
-        }
-
-        .cycle-list-wrap {
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #eef2f6;
-            border-radius: 10px;
-            padding: 4px 6px;
-        }
-        .cycle-item {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            padding: 6px 10px;
-            border-bottom: 1px solid #f1f5f9;
-            gap: 4px;
-            font-size: 13px;
-        }
-        .cycle-item:last-child {
-            border-bottom: none;
-        }
-        .cycle-item .info {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 6px;
-            flex: 1;
-            min-width: 120px;
-        }
-        .cycle-item .info .tag {
-            font-size: 10px;
-            background: #eef2f6;
-            padding: 1px 8px;
-            border-radius: 12px;
-            color: #475569;
-        }
-        .cycle-item .actions {
-            display: flex;
-            gap: 4px;
-            flex-wrap: wrap;
-        }
-        .cycle-item .actions button {
-            padding: 2px 8px;
-            font-size: 12px;
-        }
-
         .hidden {
             display: none !important;
         }
@@ -680,7 +613,7 @@
             background: #b0bac9;
         }
 
-        /* ===== 日历 ===== */
+        /* ===== 日历（周一为首日） ===== */
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -694,7 +627,6 @@
             padding: 6px 0;
         }
         .calendar-grid .day-cell {
-            background: #f8fafc;
             border-radius: 8px;
             padding: 4px 4px;
             min-height: 56px;
@@ -705,13 +637,26 @@
             flex-direction: column;
             gap: 1px;
         }
-        .calendar-grid .day-cell:hover {
+        .calendar-grid .day-cell.workday {
+            background: #ffffff;
+            border-color: #eef2f6;
+        }
+        .calendar-grid .day-cell.workday:hover {
+            background: #f8fafc;
+            border-color: #d1d9e6;
+        }
+        .calendar-grid .day-cell.restday {
             background: #f1f5f9;
+            border-color: #e2e8f0;
+        }
+        .calendar-grid .day-cell.restday:hover {
+            background: #eef2f6;
             border-color: #d1d9e6;
         }
         .calendar-grid .day-cell.empty {
             background: transparent;
             cursor: default;
+            border-color: transparent;
         }
         .calendar-grid .day-cell.empty:hover {
             background: transparent;
@@ -736,6 +681,9 @@
         .calendar-grid .day-cell .day-number.holiday {
             color: #ef4444;
         }
+        .calendar-grid .day-cell .day-number.workday-on-rest {
+            color: #0f172a;
+        }
         .calendar-grid .day-cell .day-stats {
             font-size: 10px;
             color: #64748b;
@@ -752,6 +700,9 @@
         }
         .calendar-grid .day-cell .day-stats .stat-holiday {
             color: #ef4444;
+        }
+        .calendar-grid .day-cell .day-stats .stat-workday-on-rest {
+            color: #22c55e;
         }
 
         .calendar-header {
@@ -835,7 +786,7 @@
             opacity: 0.5;
         }
 
-        /* ===== 已完成列表 - 滚动优化 ===== */
+        /* ===== 已完成列表 ===== */
         .done-list {
             display: flex;
             flex-direction: column;
@@ -898,15 +849,15 @@
             background: #fee2e2;
         }
 
-        /* ===== 节假日管理 ===== */
-        .holiday-list {
+        /* ===== 特殊日期管理 ===== */
+        .special-date-list {
             max-height: 260px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 4px;
         }
-        .holiday-item {
+        .special-date-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -915,11 +866,30 @@
             border-radius: 6px;
             font-size: 13px;
         }
-        .holiday-item .holiday-date {
+        .special-date-item .date-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .special-date-item .date-info .date-tag {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 1px 8px;
+            border-radius: 12px;
+        }
+        .special-date-item .date-info .date-tag.holiday-tag {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+        .special-date-item .date-info .date-tag.workday-tag {
+            background: #dcfce7;
+            color: #22c55e;
+        }
+        .special-date-item .date-info .date-text {
             font-family: monospace;
             font-size: 13px;
         }
-        .holiday-item button {
+        .special-date-item button {
             padding: 2px 8px;
             font-size: 11px;
             background: transparent;
@@ -928,29 +898,42 @@
             cursor: pointer;
             border-radius: 4px;
         }
-        .holiday-item button:hover {
+        .special-date-item button:hover {
             color: #ef4444;
             background: #fee2e2;
         }
-        .holiday-add-row {
+        .special-date-add-row {
             display: flex;
             gap: 8px;
             margin-top: 8px;
+            flex-wrap: wrap;
         }
-        .holiday-add-row input {
+        .special-date-add-row input {
             flex: 1;
+            min-width: 120px;
             padding: 6px 10px;
             border: 1.5px solid #e2e8f0;
             border-radius: 8px;
             font-size: 13px;
             font-family: monospace;
         }
-        .holiday-add-row input:focus {
+        .special-date-add-row input:focus {
             outline: none;
             border-color: #6366f1;
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
-        .holiday-add-row button {
+        .special-date-add-row select {
+            padding: 6px 10px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+        }
+        .special-date-add-row select:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+        .special-date-add-row button {
             padding: 6px 16px;
             background: #6366f1;
             color: #fff;
@@ -959,8 +942,153 @@
             font-size: 13px;
             cursor: pointer;
         }
-        .holiday-add-row button:hover {
+        .special-date-add-row button:hover {
             background: #4f46e5;
+        }
+
+        /* ===== 周期任务卡片页（统一风格） ===== */
+        .cycle-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 20px;
+            background: #f8fafc;
+            padding: 16px 18px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 600px) {
+            .cycle-form-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+        .cycle-form-grid .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .cycle-form-grid .field label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #475569;
+        }
+        .cycle-form-grid .field input,
+        .cycle-form-grid .field select {
+            padding: 6px 10px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+            width: 100%;
+        }
+        .cycle-form-grid .field input:focus,
+        .cycle-form-grid .field select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .cycle-form-grid .field .hint-text {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+        .cycle-form-grid .field-full {
+            grid-column: 1 / -1;
+        }
+        .cycle-form-grid .field-full .btn-primary {
+            width: 100%;
+            padding: 8px;
+        }
+
+        .cycle-list-section {
+            margin-top: 4px;
+        }
+        .cycle-list-section .section-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+        .cycle-list-wrap {
+            max-height: 340px;
+            overflow-y: auto;
+            border: 1px solid #eef2f6;
+            border-radius: 10px;
+            padding: 4px 6px;
+        }
+
+        .cycle-group-title {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 6px 3px 6px;
+            margin-top: 4px;
+            border-bottom: 1px dashed #e2e8f0;
+            color: #6366f1;
+        }
+        .cycle-group-title:first-of-type {
+            margin-top: 0;
+        }
+
+        .cycle-item {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            gap: 4px;
+            font-size: 13px;
+        }
+        .cycle-item:last-child {
+            border-bottom: none;
+        }
+        .cycle-item .info {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 120px;
+        }
+        .cycle-item .info .tag {
+            font-size: 10px;
+            background: #eef2f6;
+            padding: 1px 8px;
+            border-radius: 12px;
+            color: #475569;
+        }
+        .cycle-item .info .status-tag {
+            font-size: 11px;
+        }
+        .cycle-item .actions {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .cycle-item .actions button {
+            padding: 2px 8px;
+            font-size: 12px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: #64748b;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .cycle-item .actions button:hover {
+            background: #eef2f6;
+            color: #1e293b;
+        }
+        .cycle-item .actions button.delete-btn:hover {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+
+        .cycle-action-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 12px;
+            gap: 8px;
         }
     </style>
 </head>
@@ -1059,7 +1187,7 @@
                                     <th>类型</th>
                                     <th>事件</th>
                                     <th>细节</th>
-                                    <th>耗时 (h)</th>
+                                    <th style="min-width:70px;">耗时 (h)</th>
                                     <th style="min-width:70px;">操作</th>
                                 </tr>
                             </thead>
@@ -1080,7 +1208,7 @@
                             <button class="btn-outline btn-sm" onclick="changeMonth(-1)">◀ 上月</button>
                             <button class="btn-outline btn-sm" onclick="changeMonth(1)">下月 ▶</button>
                             <button class="btn-outline btn-sm" onclick="goToday()">今天</button>
-                            <button class="btn-outline btn-sm" onclick="openHolidayManager()">📅 节假日</button>
+                            <button class="btn-outline btn-sm" onclick="openSpecialDateManager()">📅 特殊日期</button>
                         </div>
                     </div>
                     <div class="calendar-header">
@@ -1090,65 +1218,63 @@
                 </div>
             </div>
 
-            <!-- ===== 页面：周期任务 ===== -->
+            <!-- ===== 页面：周期任务（统一风格） ===== -->
             <div id="page-cycles" class="page">
                 <div class="card">
                     <div class="card-header">
                         <h2>🔄 周期任务管理</h2>
                         <span class="badge">自动生成待办</span>
                     </div>
-                    <div style="display:grid; grid-template-columns:1fr 1.6fr; gap:20px;">
-                        <div style="background:#f8fafc; padding:16px; border-radius:12px;">
-                            <div class="field" style="margin-bottom:10px;">
-                                <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px;">事件 *</label>
-                                <input id="cycleEvent" placeholder="例如：37号文申报截止" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;">
-                            </div>
-                            <div class="field" style="margin-bottom:10px;">
-                                <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px;">类型</label>
-                                <input list="typeDatalist" id="cycleType" placeholder="输入或选择" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;">
-                                <datalist id="typeDatalist"></datalist>
-                            </div>
-                            <div class="field" style="margin-bottom:10px;">
-                                <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px;">循环方式</label>
-                                <select id="cycleMode" onchange="toggleCycleMode()" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;background:#fff;">
-                                    <option value="days">按天数循环</option>
-                                    <option value="monthlyDay">每月固定日期</option>
-                                    <option value="monthlyWorkday">每月第 N 个工作日</option>
-                                </select>
-                            </div>
-                            <div id="cycleDaysGroup">
-                                <div class="field" style="margin-bottom:10px;">
-                                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px;">首次日期 *</label>
-                                    <input type="date" id="cycleFirstDate" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;">
-                                </div>
-                                <div class="field" style="margin-bottom:10px;">
-                                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px;">间隔天数 *</label>
-                                    <input type="number" id="cycleInterval" value="365" min="1" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;">
-                                </div>
-                            </div>
-                            <div id="cycleMonthlyGroup" class="hidden">
-                                <div class="field" style="margin-bottom:10px;">
-                                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px;">每月几号 * (1-28)</label>
-                                    <input type="number" id="cycleMonthlyDay" value="1" min="1" max="28" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;">
-                                    <div style="font-size:12px;color:#94a3b8;margin-top:3px;">如果该月没有此日期，将顺延到下个月1号</div>
-                                </div>
-                            </div>
-                            <div id="cycleWorkdayGroup" class="hidden">
-                                <div class="field" style="margin-bottom:10px;">
-                                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:4px;">第几个工作日 * (1-22)</label>
-                                    <input type="number" id="cycleWorkdayN" value="1" min="1" max="22" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;">
-                                    <div style="font-size:12px;color:#94a3b8;margin-top:3px;">自动跳过已维护的节假日</div>
-                                </div>
-                            </div>
-                            <button class="btn-primary" onclick="addCycle()" style="width:100%;margin-top:4px;padding:10px;">➕ 添加周期任务</button>
-                        </div>
 
-                        <div>
-                            <div style="font-size:13px;font-weight:500;margin-bottom:6px;color:#475569;">已有周期任务</div>
-                            <div class="cycle-list-wrap" id="cycleListContainer">
-                                <div class="empty-state" style="padding:16px 0;">暂无周期任务</div>
+                    <!-- 添加表单：网格布局，统一风格 -->
+                    <div class="cycle-form-grid">
+                        <div class="field">
+                            <label>事件 *</label>
+                            <input id="cycleEvent" placeholder="例如：37号文申报截止">
+                        </div>
+                        <div class="field">
+                            <label>类型</label>
+                            <input list="typeDatalist" id="cycleType" placeholder="输入或选择">
+                            <datalist id="typeDatalist"></datalist>
+                        </div>
+                        <div class="field">
+                            <label>循环方式</label>
+                            <select id="cycleMode" onchange="toggleCycleMode()">
+                                <option value="days">按天数循环</option>
+                                <option value="monthlyDay">每月固定日期</option>
+                                <option value="monthlyWorkday">每月第 N 个工作日</option>
+                            </select>
+                        </div>
+                        <div class="field" id="cycleDaysGroup">
+                            <label>首次日期 / 间隔天数</label>
+                            <div style="display:flex; gap:6px;">
+                                <input type="date" id="cycleFirstDate" style="flex:1;">
+                                <input type="number" id="cycleInterval" value="365" min="1" style="flex:1;" placeholder="天数">
                             </div>
-                            <button class="btn-outline btn-sm" onclick="generateTodosFromCycles(); showToast('🔄 已重新生成待办');" style="margin-top:10px;">🔄 立即生成待办</button>
+                        </div>
+                        <div class="field hidden" id="cycleMonthlyGroup">
+                            <label>每月几号 (1-28)</label>
+                            <input type="number" id="cycleMonthlyDay" value="1" min="1" max="28">
+                            <div class="hint-text">如果该月没有此日期，将顺延到下个月1号</div>
+                        </div>
+                        <div class="field hidden" id="cycleWorkdayGroup">
+                            <label>第几个工作日 (1-22)</label>
+                            <input type="number" id="cycleWorkdayN" value="1" min="1" max="22">
+                            <div class="hint-text">自动跳过已维护的节假日</div>
+                        </div>
+                        <div class="field field-full">
+                            <button class="btn-primary" onclick="addCycle()">➕ 添加周期任务</button>
+                        </div>
+                    </div>
+
+                    <!-- 已有周期任务列表 -->
+                    <div class="cycle-list-section">
+                        <div class="section-label">已有周期任务</div>
+                        <div class="cycle-list-wrap" id="cycleListContainer">
+                            <div class="empty-state" style="padding:16px 0;">暂无周期任务</div>
+                        </div>
+                        <div class="cycle-action-row">
+                            <button class="btn-outline btn-sm" onclick="generateTodosFromCycles(); showToast('🔄 已重新生成待办');">🔄 立即生成待办</button>
                         </div>
                     </div>
                 </div>
@@ -1173,10 +1299,10 @@
                 doneTodos: [],
                 cycles: [],
                 types: ['cgl', 'wjx', '三启', '证照', '其他'],
-                holidays: [], // 用户自定义节假日 YYYY-MM-DD
+                specialDates: [],
                 notes: '',
                 nextId: 1,
-                timers: {} // { todoId: startTime (timestamp) }
+                timers: {}
             };
         }
 
@@ -1192,7 +1318,7 @@
                     if (!parsed.doneTodos) parsed.doneTodos = [];
                     if (!parsed.cycles) parsed.cycles = [];
                     if (!parsed.types) parsed.types = ['cgl', 'wjx', '三启', '证照', '其他'];
-                    if (!parsed.holidays) parsed.holidays = [];
+                    if (!parsed.specialDates) parsed.specialDates = [];
                     if (parsed.notes === undefined) parsed.notes = '';
                     if (!parsed.nextId) parsed.nextId = 1;
                     if (!parsed.timers) parsed.timers = {};
@@ -1225,19 +1351,17 @@
         // ============================================================
         //  工具函数
         // ============================================================
-function todayStr() {
-    const d = new Date();
-    // 使用 getFullYear / getMonth / getDate 获取本地时间
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
+        function todayStr() {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
 
         function formatDate(dateStr) {
             if (!dateStr) return '-';
-            const d = new Date(dateStr + 'T00:00:00');
-            return d.toISOString().slice(0, 10);
+            return dateStr;
         }
 
         function formatDateTime(dateStr) {
@@ -1247,7 +1371,8 @@ function todayStr() {
         }
 
         function getDateOffset(dateStr, days) {
-            const d = new Date(dateStr + 'T00:00:00');
+            const parts = dateStr.split('-').map(Number);
+            const d = new Date(parts[0], parts[1] - 1, parts[2]);
             d.setDate(d.getDate() + days);
             const y = d.getFullYear();
             const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -1290,11 +1415,6 @@ function todayStr() {
                     dlist.appendChild(opt);
                 });
             }
-            // 更新 cycle 页面的类型输入框的 datalist
-            const cycleTypeInput = document.getElementById('cycleType');
-            if (cycleTypeInput) {
-                // 不需要额外操作，datalist 已更新
-            }
         }
 
         function updateSidebarBadges() {
@@ -1302,18 +1422,36 @@ function todayStr() {
             document.getElementById('sidebarHistoryCount').textContent = data.records.length;
         }
 
+        // ============================================================
+        //  特殊日期（节假日 / 调休工作日）
+        // ============================================================
+        function isSpecialDate(dateStr) {
+            return data.specialDates.find(d => d.date === dateStr) || null;
+        }
+
         function isHoliday(dateStr) {
-            return data.holidays.includes(dateStr);
+            const special = isSpecialDate(dateStr);
+            if (special) return special.type === 'holiday';
+            const d = new Date(dateStr + 'T00:00:00');
+            const day = d.getDay();
+            return day === 0 || day === 6;
         }
 
         function isWorkday(dateStr) {
+            const special = isSpecialDate(dateStr);
+            if (special) return special.type === 'workday';
             const d = new Date(dateStr + 'T00:00:00');
             const day = d.getDay();
-            if (day === 6 || day === 0) {
-                return isHoliday(dateStr) ? false : true;
-            }
-            if (isHoliday(dateStr)) return false;
-            return true;
+            return day !== 0 && day !== 6;
+        }
+
+        function getDayType(dateStr) {
+            const special = isSpecialDate(dateStr);
+            if (special) return special.type;
+            const d = new Date(dateStr + 'T00:00:00');
+            const day = d.getDay();
+            if (day === 0 || day === 6) return 'holiday';
+            return 'workday';
         }
 
         function getNthWorkday(year, month, n) {
@@ -1330,82 +1468,24 @@ function todayStr() {
             return null;
         }
 
-        // ============================================================
-        //  计时器
-        // ============================================================
-        function getTimer(todoId) {
-            return data.timers[todoId] || null;
-        }
-
-        function startTimer(todoId) {
-            data.timers[todoId] = Date.now();
-            saveData();
-            renderTodos();
-            showToast('⏱️ 计时已开始');
-        }
-
-        function stopTimer(todoId) {
-            const start = data.timers[todoId];
-            if (!start) {
-                showToast('计时器未启动');
+        function addSpecialDateFromCalendar(dateStr, type) {
+            if (data.specialDates.find(d => d.date === dateStr)) {
+                showToast('该日期已存在特殊标记，请先移除再重新添加');
                 return;
             }
-            const elapsedMs = Date.now() - start;
-            const elapsedHours = elapsedMs / (1000 * 60 * 60);
-            // 保留两位小数，最小 0.05 小时（3分钟）
-            const hours = Math.max(0.05, Math.round(elapsedHours * 20) / 20);
-
-            delete data.timers[todoId];
-            saveData();
-
-            // 弹出记录工时窗口，自动填入时长
-            const todo = data.todos.find(t => t.id === todoId);
-            if (!todo) { showToast('待办不存在'); return; }
-
-            showModal(`
-                <h3>⏱️ 记录工时</h3>
-                <div class="sub">为「${escapeHtml(todo.event)}」记录工作时间（计时 ${hours.toFixed(1)} 小时）</div>
-                <div class="field">
-                    <label>今天花费 (小时) *</label>
-                    <input type="number" id="modalHours" step="0.05" min="0.05" value="${hours.toFixed(2)}" placeholder="例如 1.5">
-                    <div class="hint">可填小数，如 0.5 表示半小时</div>
-                </div>
-                <div class="field">
-                    <label>细节（可选）</label>
-                    <input id="modalDetail" placeholder="例如：处理了某某客户的邮件">
-                    <div class="hint">补充说明，可在历史记录中搜索</div>
-                </div>
-                <div class="modal-actions">
-                    <button class="btn-outline" onclick="closeModal()">取消</button>
-                    <button class="btn-primary" onclick="confirmLogTimeFromTimer(${todoId})">保存工时</button>
-                </div>
-            `);
-
-            // 聚焦到小时输入框
-            setTimeout(() => {
-                const el = document.getElementById('modalHours');
-                if (el) el.focus();
-            }, 100);
-        }
-
-        function confirmLogTimeFromTimer(todoId) {
-            const hours = parseFloat(document.getElementById('modalHours').value);
-            if (isNaN(hours) || hours <= 0) { showToast('请输入有效的小时数（大于0）'); return; }
-            const todo = data.todos.find(t => t.id === todoId);
-            if (!todo) { showToast('待办不存在'); return; }
-            const detail = document.getElementById('modalDetail').value.trim() || '';
-
-            data.records.push({
-                id: 'r' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                date: todayStr(),
-                type: todo.type,
-                event: todo.event,
-                hours: hours,
-                detail: detail
-            });
+            data.specialDates.push({ date: dateStr, type: type });
             saveData();
             closeModal();
-            showToast(`⏱️ 已记录 ${hours.toFixed(1)} 小时${detail ? '（' + detail + '）' : ''}`);
+            renderCalendar();
+            showToast(`✅ 已设置 ${dateStr} 为 ${type === 'holiday' ? '节假日' : '调休工作日'}`);
+        }
+
+        function removeSpecialDateFromCalendar(dateStr) {
+            data.specialDates = data.specialDates.filter(d => d.date !== dateStr);
+            saveData();
+            closeModal();
+            renderCalendar();
+            showToast('已移除特殊标记');
         }
 
         // ============================================================
@@ -1495,6 +1575,80 @@ function todayStr() {
         }
 
         // ============================================================
+        //  计时器
+        // ============================================================
+        function getTimer(todoId) {
+            return data.timers[todoId] || null;
+        }
+
+        function startTimer(todoId) {
+            data.timers[todoId] = Date.now();
+            saveData();
+            renderTodos();
+            showToast('⏱️ 计时已开始');
+        }
+
+        function stopTimer(todoId) {
+            const start = data.timers[todoId];
+            if (!start) {
+                showToast('计时器未启动');
+                return;
+            }
+            const elapsedMs = Date.now() - start;
+            const elapsedHours = elapsedMs / (1000 * 60 * 60);
+            const hours = Math.max(0.05, Math.round(elapsedHours * 20) / 20);
+
+            delete data.timers[todoId];
+            saveData();
+
+            const todo = data.todos.find(t => t.id === todoId);
+            if (!todo) { showToast('待办不存在'); return; }
+
+            showModal(`
+                <h3>⏱️ 记录工时</h3>
+                <div class="sub">为「${escapeHtml(todo.event)}」记录工作时间（计时 ${hours.toFixed(2)} 小时）</div>
+                <div class="field">
+                    <label>今天花费 (小时) *</label>
+                    <input type="number" id="modalHours" step="0.01" min="0.01" value="${hours.toFixed(2)}" placeholder="例如 1.50">
+                    <div class="hint">可填小数，如 0.50 表示半小时</div>
+                </div>
+                <div class="field">
+                    <label>细节（可选）</label>
+                    <input id="modalDetail" placeholder="例如：处理了某某客户的邮件">
+                    <div class="hint">补充说明，可在历史记录中搜索</div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-outline" onclick="closeModal()">取消</button>
+                    <button class="btn-primary" onclick="confirmLogTimeFromTimer(${todoId})">保存工时</button>
+                </div>
+            `);
+            setTimeout(() => {
+                const el = document.getElementById('modalHours');
+                if (el) el.focus();
+            }, 100);
+        }
+
+        function confirmLogTimeFromTimer(todoId) {
+            const hours = parseFloat(document.getElementById('modalHours').value);
+            if (isNaN(hours) || hours <= 0) { showToast('请输入有效的小时数（大于0）'); return; }
+            const todo = data.todos.find(t => t.id === todoId);
+            if (!todo) { showToast('待办不存在'); return; }
+            const detail = document.getElementById('modalDetail').value.trim() || '';
+
+            data.records.push({
+                id: 'r' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                date: todayStr(),
+                type: todo.type,
+                event: todo.event,
+                hours: Math.round(hours * 100) / 100,
+                detail: detail
+            });
+            saveData();
+            closeModal();
+            showToast(`⏱️ 已记录 ${Math.round(hours * 100) / 100} 小时${detail ? '（' + detail + '）' : ''}`);
+        }
+
+        // ============================================================
         //  页面切换
         // ============================================================
         let currentPage = 'todo';
@@ -1508,7 +1662,8 @@ function todayStr() {
                 el.classList.toggle('active', el.dataset.page === page);
             });
             if (page === 'calendar') renderCalendar();
-            if (page === 'history') renderRecords();
+            if (page === 'history') { renderStats();
+                renderRecords(); }
             if (page === 'todo') renderTodos();
             if (page === 'cycles') renderCycles();
         }
@@ -1588,7 +1743,6 @@ function todayStr() {
             const pinnedClass = todo.pinned ? 'pinned' : '';
             const pinIcon = todo.pinned ? '<span class="pin-icon">📌</span>' : '';
 
-            // 计时器状态
             const timer = getTimer(todo.id);
             const timerActive = timer !== null && timer !== undefined;
             const timerBtnClass = timerActive ? 'btn-timer-active' : '';
@@ -1731,9 +1885,9 @@ function todayStr() {
                     .reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0);
             }
 
-            document.getElementById('statToday').innerHTML = sumHours(today).toFixed(1) + '<span class="unit">h</span>';
-            document.getElementById('statYesterday').innerHTML = sumHours(yesterday).toFixed(1) + '<span class="unit">h</span>';
-            document.getElementById('statDayBefore').innerHTML = sumHours(dayBefore).toFixed(1) + '<span class="unit">h</span>';
+            document.getElementById('statToday').innerHTML = sumHours(today).toFixed(2) + '<span class="unit">h</span>';
+            document.getElementById('statYesterday').innerHTML = sumHours(yesterday).toFixed(2) + '<span class="unit">h</span>';
+            document.getElementById('statDayBefore').innerHTML = sumHours(dayBefore).toFixed(2) + '<span class="unit">h</span>';
         }
 
         function renderRecords() {
@@ -1758,7 +1912,7 @@ function todayStr() {
                         <td><span class="type-badge" style="background:${color}20; color:${color};">${getTypeLabel(r.type)}</span></td>
                         <td>${escapeHtml(r.event)}</td>
                         <td>${escapeHtml(r.detail || '')}</td>
-                        <td>${parseFloat(r.hours || 0).toFixed(1)}</td>
+                        <td>${(parseFloat(r.hours) || 0).toFixed(2)}</td>
                         <td>
                             <button style="background:transparent;border:none;color:#64748b;padding:3px 6px;border-radius:4px;cursor:pointer;" onclick="openEditRecord('${rid}')">✏️</button>
                             <button style="background:transparent;border:none;color:#64748b;padding:3px 6px;border-radius:4px;cursor:pointer;" onclick="deleteRecord('${rid}')">🗑️</button>
@@ -1904,8 +2058,8 @@ function todayStr() {
                 <div class="sub">为「${escapeHtml(todo.event)}」记录今天的工作时间</div>
                 <div class="field">
                     <label>今天花费 (小时) *</label>
-                    <input type="number" id="modalHours" step="0.05" min="0.05" placeholder="例如 1.5">
-                    <div class="hint">可填小数，如 0.5 表示半小时</div>
+                    <input type="number" id="modalHours" step="0.01" min="0.01" placeholder="例如 1.50">
+                    <div class="hint">可填小数，如 0.50 表示半小时</div>
                 </div>
                 <div class="field">
                     <label>细节（可选）</label>
@@ -1934,19 +2088,18 @@ function todayStr() {
                 date: todayStr(),
                 type: todo.type,
                 event: todo.event,
-                hours: hours,
+                hours: Math.round(hours * 100) / 100,
                 detail: detail
             });
             saveData();
             closeModal();
-            showToast(`⏱️ 已记录 ${hours.toFixed(1)} 小时${detail ? '（' + detail + '）' : ''}`);
+            showToast(`⏱️ 已记录 ${Math.round(hours * 100) / 100} 小时${detail ? '（' + detail + '）' : ''}`);
         }
 
         function completeTodo(todoId) {
             if (!confirm('确认完成此待办？它将移入已完成列表。')) return;
             const todo = data.todos.find(t => t.id === todoId);
             if (!todo) { showToast('待办不存在'); return; }
-            // 如果计时器在运行，先停止
             if (data.timers[todoId]) {
                 delete data.timers[todoId];
             }
@@ -1991,7 +2144,7 @@ function todayStr() {
                 </div>
                 <div class="field">
                     <label>耗时 (小时)</label>
-                    <input type="number" id="modalEditRecordHours" step="0.05" min="0.05" value="${record.hours || 1}">
+                    <input type="number" id="modalEditRecordHours" step="0.01" min="0.01" value="${(record.hours || 1).toFixed(2)}">
                 </div>
                 <div class="modal-actions">
                     <button class="btn-outline" onclick="closeModal()">取消</button>
@@ -2015,7 +2168,7 @@ function todayStr() {
 
             record.event = event;
             record.type = type;
-            record.hours = hours;
+            record.hours = Math.round(hours * 100) / 100;
             record.detail = detail;
             saveData();
             closeModal();
@@ -2042,7 +2195,7 @@ function todayStr() {
         }
 
         // ============================================================
-        //  周期任务（独立页面）
+        //  周期任务（统一风格，按类型分组，删除按钮无底色）
         // ============================================================
         function renderCycles() {
             const container = document.getElementById('cycleListContainer');
@@ -2050,29 +2203,52 @@ function todayStr() {
                 container.innerHTML = `<div class="empty-state" style="padding:16px 0;">暂无周期任务</div>`;
                 return;
             }
-            let html = '';
+
+            const groups = {};
             data.cycles.forEach(c => {
-                let cycleInfo = '';
-                if (c.cycleType === 'days') cycleInfo = `每 ${c.intervalDays} 天`;
-                else if (c.cycleType === 'monthlyDay') cycleInfo = `每月 ${c.monthlyDay||1} 号`;
-                else if (c.cycleType === 'monthlyWorkday') cycleInfo = `每月第 ${c.monthlyWorkdayN||1} 个工作日`;
-                const status = c.active ? '✅' : '⏸️';
-                html += `
-                    <div class="cycle-item">
-                        <div class="info">
-                            <span class="type-tag" style="background:${getTypeColor(c.type)}20; color:${getTypeColor(c.type)};">${getTypeLabel(c.type)}</span>
-                            <span>${escapeHtml(c.event)}</span>
-                            <span class="tag">${cycleInfo}</span>
-                            <span class="tag">${status}</span>
-                        </div>
-                        <div class="actions">
-                            <button class="btn-outline btn-sm" onclick="openEditCycle(${c.id})">✏️</button>
-                            <button class="btn-outline btn-sm" onclick="toggleCycle(${c.id})">${c.active ? '⏸️' : '▶️'}</button>
-                            <button class="btn-danger btn-sm" onclick="deleteCycle(${c.id})">🗑️</button>
-                        </div>
-                    </div>
-                `;
+                const type = c.type || '其他';
+                if (!groups[type]) groups[type] = [];
+                groups[type].push(c);
             });
+
+            const typeOrder = ['cgl', 'wjx', '三启', '证照', '其他'];
+            const sortedTypes = Object.keys(groups).sort((a, b) => {
+                const ia = typeOrder.indexOf(a);
+                const ib = typeOrder.indexOf(b);
+                if (ia === -1 && ib === -1) return a.localeCompare(b);
+                if (ia === -1) return 1;
+                if (ib === -1) return -1;
+                return ia - ib;
+            });
+
+            let html = '';
+            sortedTypes.forEach(type => {
+                const items = groups[type];
+                const color = getTypeColor(type);
+                html += `<div class="cycle-group-title" style="color:${color};">${type}</div>`;
+                items.forEach(c => {
+                    let cycleInfo = '';
+                    if (c.cycleType === 'days') cycleInfo = `每 ${c.intervalDays} 天`;
+                    else if (c.cycleType === 'monthlyDay') cycleInfo = `每月 ${c.monthlyDay||1} 号`;
+                    else if (c.cycleType === 'monthlyWorkday') cycleInfo = `每月第 ${c.monthlyWorkdayN||1} 个工作日`;
+                    const status = c.active ? '✅' : '⏸️';
+                    html += `
+                        <div class="cycle-item">
+                            <div class="info">
+                                <span class="tag">${cycleInfo}</span>
+                                <span>${escapeHtml(c.event)}</span>
+                                <span class="status-tag">${status}</span>
+                            </div>
+                            <div class="actions">
+                                <button onclick="openEditCycle(${c.id})" title="编辑">✏️</button>
+                                <button onclick="toggleCycle(${c.id})" title="${c.active ? '停用' : '启用'}">${c.active ? '⏸️' : '▶️'}</button>
+                                <button class="delete-btn" onclick="deleteCycle(${c.id})" title="删除">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+
             container.innerHTML = html;
         }
 
@@ -2113,7 +2289,6 @@ function todayStr() {
             saveData();
             showToast('✅ 周期任务已添加');
             renderCycles();
-            // 清空表单
             document.getElementById('cycleEvent').value = '';
             document.getElementById('cycleType').value = '';
         }
@@ -2121,7 +2296,6 @@ function todayStr() {
         function openEditCycle(cycleId) {
             const cycle = data.cycles.find(c => c.id === cycleId);
             if (!cycle) { showToast('周期任务不存在'); return; }
-            // 用通用模态框编辑
             let extraFields = '';
             if (cycle.cycleType === 'days') {
                 extraFields = `
@@ -2248,7 +2422,75 @@ function todayStr() {
         }
 
         // ============================================================
-        //  日历视图 + 节假日管理
+        //  特殊日期管理（弹窗）
+        // ============================================================
+        function openSpecialDateManager() {
+            let listHtml = '';
+            if (data.specialDates.length === 0) {
+                listHtml = `<div class="day-detail-empty">暂无维护的特殊日期</div>`;
+            } else {
+                const sorted = [...data.specialDates].sort((a, b) => a.date.localeCompare(b.date));
+                listHtml = sorted.map(d => {
+                    const tagClass = d.type === 'holiday' ? 'holiday-tag' : 'workday-tag';
+                    const tagText = d.type === 'holiday' ? '🎉 节假日' : '🏢 调休工作日';
+                    return `
+                        <div class="special-date-item">
+                            <div class="date-info">
+                                <span class="date-tag ${tagClass}">${tagText}</span>
+                                <span class="date-text">${d.date}</span>
+                            </div>
+                            <button onclick="removeSpecialDate('${d.date}')">🗑️</button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            showModal(`
+                <h3>📅 特殊日期管理</h3>
+                <div class="sub">维护法定节假日和调休工作日，影响日历显示和“工作日”计算</div>
+                <div class="special-date-list">${listHtml}</div>
+                <div class="special-date-add-row">
+                    <input type="date" id="specialDateInput" value="${todayStr()}">
+                    <select id="specialDateType">
+                        <option value="holiday">🎉 节假日（休息）</option>
+                        <option value="workday">🏢 调休工作日（上班）</option>
+                    </select>
+                    <button onclick="addSpecialDate()">添加</button>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-outline" onclick="closeModal()">关闭</button>
+                </div>
+            `);
+        }
+
+        function addSpecialDate() {
+            const date = document.getElementById('specialDateInput').value;
+            if (!date) { showToast('请选择日期'); return; }
+            const type = document.getElementById('specialDateType').value;
+            if (data.specialDates.find(d => d.date === date)) {
+                showToast('该日期已存在，请先删除再重新添加');
+                return;
+            }
+            data.specialDates.push({ date, type });
+            saveData();
+            closeModal();
+            showToast(`✅ 已添加 ${date} 为 ${type === 'holiday' ? '节假日' : '调休工作日'}`);
+            openSpecialDateManager();
+            renderCalendar();
+        }
+
+        function removeSpecialDate(date) {
+            if (!confirm(`确认移除 ${date} 的特殊标记？`)) return;
+            data.specialDates = data.specialDates.filter(d => d.date !== date);
+            saveData();
+            closeModal();
+            showToast('已移除');
+            openSpecialDateManager();
+            renderCalendar();
+        }
+
+        // ============================================================
+        //  日历视图（周一为首日）
         // ============================================================
         let calendarYear = new Date().getFullYear();
         let calendarMonth = new Date().getMonth();
@@ -2258,15 +2500,18 @@ function todayStr() {
             const label = document.getElementById('calendarMonthLabel');
             label.textContent = `${calendarYear}年${calendarMonth + 1}月`;
 
-            const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+            // 周一为首日：计算当月第一天是星期几（周一=0, 周日=6）
+            const firstDayOfMonth = new Date(calendarYear, calendarMonth, 1).getDay();
+            const startOffset = (firstDayOfMonth === 0) ? 6 : firstDayOfMonth - 1;
+
             const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
             const today = todayStr();
 
             let html = '';
-            const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+            const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
             weekdays.forEach(w => { html += `<div class="weekday">${w}</div>`; });
 
-            for (let i = 0; i < firstDay; i++) {
+            for (let i = 0; i < startOffset; i++) {
                 html += `<div class="day-cell empty"></div>`;
             }
 
@@ -2274,7 +2519,15 @@ function todayStr() {
                 const dateStr =
                     `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const isToday = dateStr === today;
-                const isHoliday = data.holidays.includes(dateStr);
+                const dayType = getDayType(dateStr);
+                const isHoliday = dayType === 'holiday';
+                const isWorkdayOnRest = dayType === 'workday' && (new Date(dateStr + 'T00:00:00').getDay() === 0 || new Date(
+                    dateStr + 'T00:00:00').getDay() === 6);
+
+                const cellClass = isHoliday ? 'restday' : 'workday';
+                const dayNumberClass = isToday ? 'today' : (isHoliday ? 'holiday' : (isWorkdayOnRest ? 'workday-on-rest' :
+                ''));
+
                 const recordsOnDay = data.records.filter(r => r.date === dateStr);
                 const todosOnDay = data.todos.filter(t => t.dueDate === dateStr);
                 const doneCount = recordsOnDay.length;
@@ -2283,10 +2536,11 @@ function todayStr() {
                 if (doneCount > 0) statsHtml += `<div class="stat-record">📝 ${doneCount}</div>`;
                 if (todoCount > 0) statsHtml += `<div class="stat-todo">⏳ ${todoCount}</div>`;
                 if (isHoliday) statsHtml += `<div class="stat-holiday">🎉 节假日</div>`;
-                const holidayClass = isHoliday ? 'holiday' : '';
+                if (isWorkdayOnRest) statsHtml += `<div class="stat-workday-on-rest">🏢 调休上班</div>`;
+
                 html += `
-                    <div class="day-cell" onclick="openDayDetail('${dateStr}')">
-                        <div class="day-number ${isToday ? 'today' : ''} ${holidayClass}">${day}</div>
+                    <div class="day-cell ${cellClass}" onclick="openDayDetail('${dateStr}')">
+                        <div class="day-number ${dayNumberClass}">${day}</div>
                         <div class="day-stats">${statsHtml}</div>
                     </div>
                 `;
@@ -2313,6 +2567,25 @@ function todayStr() {
         function openDayDetail(dateStr) {
             const records = data.records.filter(r => r.date === dateStr);
             const todos = data.todos.filter(t => t.dueDate === dateStr);
+            const dayType = getDayType(dateStr);
+            const typeLabel = dayType === 'holiday' ? '🎉 节假日' : '🏢 工作日';
+
+            // 检查是否已有特殊标记
+            const existingSpecial = isSpecialDate(dateStr);
+            const isHolidayNow = dayType === 'holiday';
+            const isWorkdayNow = dayType === 'workday';
+
+            let specialActionsHtml = '';
+            if (existingSpecial) {
+                specialActionsHtml = `
+                    <button class="btn-outline btn-sm" onclick="removeSpecialDateFromCalendar('${dateStr}')" style="color:#ef4444;">移除特殊标记</button>
+                `;
+            } else {
+                specialActionsHtml = `
+                    <button class="btn-outline btn-sm" onclick="addSpecialDateFromCalendar('${dateStr}', 'holiday')">🎉 设为节假日</button>
+                    <button class="btn-outline btn-sm" onclick="addSpecialDateFromCalendar('${dateStr}', 'workday')">🏢 设为调休工作日</button>
+                `;
+            }
 
             let recordsHtml = '';
             if (records.length === 0) {
@@ -2321,7 +2594,7 @@ function todayStr() {
                 recordsHtml = records.map(r => `
                     <div class="day-detail-item">
                         <span><span class="detail-type" style="background:${getTypeColor(r.type)}20; color:${getTypeColor(r.type)};">${getTypeLabel(r.type)}</span> ${escapeHtml(r.event)}${r.detail ? ' <span class="detail-detail">· ' + escapeHtml(r.detail) + '</span>' : ''}</span>
-                        <span class="detail-hours">${parseFloat(r.hours || 0).toFixed(1)}h</span>
+                        <span class="detail-hours">${(parseFloat(r.hours)||0).toFixed(2)}h</span>
                     </div>
                 `).join('');
             }
@@ -2338,12 +2611,9 @@ function todayStr() {
                 `).join('');
             }
 
-            const isHoliday = data.holidays.includes(dateStr);
-            const holidayBadge = isHoliday ? ' 🎉 节假日' : '';
-
             const displayDate = formatDate(dateStr);
             showModal(`
-                <h3>📅 ${displayDate}${holidayBadge}</h3>
+                <h3>📅 ${displayDate} · ${typeLabel}</h3>
                 <div class="sub">工作记录 & 待办</div>
                 <div style="margin-bottom:10px;">
                     <div style="font-weight:500;font-size:13px;color:#6366f1;margin-bottom:4px;">📝 工作记录 (${records.length})</div>
@@ -2353,65 +2623,13 @@ function todayStr() {
                     <div style="font-weight:500;font-size:13px;color:#f59e0b;margin-bottom:4px;">⏳ 待办 (${todos.length})</div>
                     <div class="day-detail-list">${todosHtml}</div>
                 </div>
-                <div class="modal-actions">
-                    <button class="btn-outline" onclick="closeModal()">关闭</button>
-                </div>
-            `);
-        }
-
-        // ============================================================
-        //  节假日管理
-        // ============================================================
-        function openHolidayManager() {
-            const today = todayStr();
-            let listHtml = '';
-            if (data.holidays.length === 0) {
-                listHtml = `<div class="day-detail-empty">暂无维护的节假日</div>`;
-            } else {
-                // 按日期排序
-                const sorted = [...data.holidays].sort();
-                listHtml = sorted.map(d => `
-                    <div class="holiday-item">
-                        <span class="holiday-date">${d}</span>
-                        <button onclick="removeHoliday('${d}')">🗑️</button>
-                    </div>
-                `).join('');
-            }
-
-            showModal(`
-                <h3>📅 节假日管理</h3>
-                <div class="sub">添加或删除节假日日期，用于日历展示和“每月第N个工作日”的计算</div>
-                <div class="holiday-list">${listHtml}</div>
-                <div class="holiday-add-row">
-                    <input type="date" id="holidayInput" value="${today}">
-                    <button onclick="addHoliday()">添加</button>
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid #eef2f6;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+                    ${specialActionsHtml}
                 </div>
                 <div class="modal-actions">
                     <button class="btn-outline" onclick="closeModal()">关闭</button>
                 </div>
             `);
-        }
-
-        function addHoliday() {
-            const date = document.getElementById('holidayInput').value;
-            if (!date) { showToast('请选择日期'); return; }
-            if (data.holidays.includes(date)) { showToast('该日期已是节假日'); return; }
-            data.holidays.push(date);
-            saveData();
-            closeModal();
-            showToast('✅ 已添加节假日');
-            openHolidayManager();
-            renderCalendar();
-        }
-
-        function removeHoliday(date) {
-            if (!confirm(`确认移除 ${date} 的节假日标记？`)) return;
-            data.holidays = data.holidays.filter(d => d !== date);
-            saveData();
-            closeModal();
-            showToast('已移除');
-            openHolidayManager();
-            renderCalendar();
         }
 
         // ============================================================
@@ -2436,7 +2654,7 @@ function todayStr() {
                 r.type,
                 `"${r.event.replace(/"/g, '""')}"`,
                 `"${(r.detail || '').replace(/"/g, '""')}"`,
-                parseFloat(r.hours || 0).toFixed(1)
+                (parseFloat(r.hours) || 0).toFixed(2)
             ]);
             const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
             const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -2464,7 +2682,7 @@ function todayStr() {
                     data = imported;
                     if (!data.types) data.types = ['cgl', 'wjx', '三启', '证照', '其他'];
                     if (!data.doneTodos) data.doneTodos = [];
-                    if (!data.holidays) data.holidays = [];
+                    if (!data.specialDates) data.specialDates = [];
                     if (!data.timers) data.timers = {};
                     if (!data.nextId) data.nextId = 1;
                     if (data.notes === undefined) data.notes = '';
@@ -2550,7 +2768,6 @@ function todayStr() {
             document.getElementById('filterDateStart').value = today;
             document.getElementById('filterDateEnd').value = today;
 
-            // 周期任务页面的日期默认今天
             const cycleFirstDate = document.getElementById('cycleFirstDate');
             if (cycleFirstDate) cycleFirstDate.value = today;
 
@@ -2561,6 +2778,7 @@ function todayStr() {
             }
 
             switchPage('todo');
+            renderStats();
         }
 
         init();
