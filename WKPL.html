@@ -346,6 +346,13 @@
             color: #22c55e;
             font-weight: 500;
         }
+        .todo-item .info .source-tag {
+            font-size: 9px;
+            color: #94a3b8;
+            background: #f1f5f9;
+            padding: 0 6px;
+            border-radius: 10px;
+        }
         .todo-item .actions {
             display: flex;
             gap: 4px;
@@ -946,7 +953,7 @@
             background: #4f46e5;
         }
 
-        /* ===== 周期任务卡片页（统一风格） ===== */
+        /* ===== 周期任务卡片页 ===== */
         .cycle-form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -1010,7 +1017,7 @@
             margin-bottom: 8px;
         }
         .cycle-list-wrap {
-            max-height: 340px;
+            max-height: 300px;
             overflow-y: auto;
             border: 1px solid #eef2f6;
             border-radius: 10px;
@@ -1218,7 +1225,7 @@
                 </div>
             </div>
 
-            <!-- ===== 页面：周期任务（统一风格） ===== -->
+            <!-- ===== 页面：周期任务 ===== -->
             <div id="page-cycles" class="page">
                 <div class="card">
                     <div class="card-header">
@@ -1226,7 +1233,7 @@
                         <span class="badge">自动生成待办</span>
                     </div>
 
-                    <!-- 添加表单：网格布局，统一风格 -->
+                    <!-- 添加表单 -->
                     <div class="cycle-form-grid">
                         <div class="field">
                             <label>事件 *</label>
@@ -1267,14 +1274,14 @@
                         </div>
                     </div>
 
-                    <!-- 已有周期任务列表 -->
+                    <!-- 已有周期任务列表（带滚动条） -->
                     <div class="cycle-list-section">
                         <div class="section-label">已有周期任务</div>
                         <div class="cycle-list-wrap" id="cycleListContainer">
                             <div class="empty-state" style="padding:16px 0;">暂无周期任务</div>
                         </div>
                         <div class="cycle-action-row">
-                            <button class="btn-outline btn-sm" onclick="generateTodosFromCycles(); showToast('🔄 已重新生成待办');">🔄 立即生成待办</button>
+                            <button class="btn-outline btn-sm" onclick="manualGenerateCycles()" title="紧急情况下手动生成">🔄 立即生成待办</button>
                         </div>
                     </div>
                 </div>
@@ -1330,6 +1337,8 @@
                     });
                     parsed.records.forEach(r => { if (!r.id) r.id = 'r' + Date.now() + '_' + Math.random().toString(36)
                             .slice(2, 6); });
+                    // 兼容旧数据：给没有 source 的 todo 加默认值
+                    parsed.todos.forEach(t => { if (!t.source) t.source = 'manual'; });
                     return parsed;
                 }
             } catch (e) { console.warn('加载数据失败', e); }
@@ -1423,7 +1432,7 @@
         }
 
         // ============================================================
-        //  特殊日期（节假日 / 调休工作日）
+        //  特殊日期
         // ============================================================
         function isSpecialDate(dateStr) {
             return data.specialDates.find(d => d.date === dateStr) || null;
@@ -1489,7 +1498,7 @@
         }
 
         // ============================================================
-        //  周期任务引擎
+        //  ★★★ 核心升级：自动生成周期任务（防重复） ★★★
         // ============================================================
         function getNextCycleDate(cycle) {
             const today = todayStr();
@@ -1542,36 +1551,109 @@
             return null;
         }
 
-        function generateTodosFromCycles() {
+        function generateTodosFromCycles(auto = true) {
             const today = todayStr();
+            // 未来 90 天窗口
+            const horizon = getDateOffset(today, 90);
+
             data.cycles.forEach(cycle => {
                 if (!cycle.active) return;
-                const due = getNextCycleDate(cycle);
+
+                // 计算这个周期任务的所有应生成日期（从今天到 horizon）
+                let due = getNextCycleDate(cycle);
                 if (!due) return;
-                const exists = data.todos.some(t =>
-                    t.event === cycle.event &&
-                    t.type === cycle.type &&
-                    t.dueDate === due
-                );
-                if (!exists) {
-                    data.todos.push({
-                        id: genId(),
-                        type: cycle.type,
-                        event: cycle.event,
-                        dueDate: due,
-                        createdAt: today,
-                        pinned: false
-                    });
+
+                // 如果第一个日期就已经超出 horizon，跳过
+                if (due > horizon) return;
+
+                // 遍历所有应生成日期
+                while (due <= horizon) {
+                    // ★★★ 关键防重复逻辑 ★★★
+                    // 检查是否已经存在该日期、该事件的待办（无论是否已完成）
+                    const existingTodo = data.todos.find(t =>
+                        t.event === cycle.event &&
+                        t.type === cycle.type &&
+                        t.dueDate === due &&
+                        t.source === 'cycle'  // 只检查周期来源的待办
+                    );
+
+                    // 检查是否已经在 doneTodos 中（已完成的周期待办）
+                    const existingDone = data.doneTodos.find(d =>
+                        d.event === cycle.event &&
+                        d.type === cycle.type &&
+                        d.dueDate === due &&
+                        d.source === 'cycle'
+                    );
+
+                    // 如果既没有待办、也没有已完成记录，才生成新的
+                    if (!existingTodo && !existingDone) {
+                        data.todos.push({
+                            id: genId(),
+                            type: cycle.type,
+                            event: cycle.event,
+                            dueDate: due,
+                            createdAt: today,
+                            pinned: false,
+                            source: 'cycle'  // ★ 标记来源
+                        });
+                    }
+
+                    // 计算下一个日期
+                    if (cycle.cycleType === 'days') {
+                        due = getDateOffset(due, cycle.intervalDays);
+                    } else if (cycle.cycleType === 'monthlyDay') {
+                        // 跳到下个月
+                        const parts = due.split('-').map(Number);
+                        let month = parts[1] + 1;
+                        let year = parts[0];
+                        if (month > 12) { month = 1;
+                            year++; }
+                        const day = cycle.monthlyDay || 1;
+                        due = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        // 检查日期是否有效
+                        let d = new Date(due + 'T00:00:00');
+                        if (d.getMonth() + 1 !== month) {
+                            month++;
+                            if (month > 12) { month = 1;
+                                year++; }
+                            due = `${year}-${String(month).padStart(2, '0')}-01`;
+                        }
+                    } else if (cycle.cycleType === 'monthlyWorkday') {
+                        // 跳到下个月
+                        const parts = due.split('-').map(Number);
+                        let month = parts[1] + 1;
+                        let year = parts[0];
+                        if (month > 12) { month = 1;
+                            year++; }
+                        const n = cycle.monthlyWorkdayN || 1;
+                        const nextDue = getNthWorkday(year, month, n);
+                        due = nextDue || `${year}-${String(month).padStart(2, '0')}-01`;
+                    }
                 }
             });
+
+            // 去重（保留第一个）
             const seen = new Set();
             data.todos = data.todos.filter(t => {
-                const key = t.event + '|' + t.type + '|' + t.dueDate;
+                const key = t.id + '|' + t.source;
                 if (seen.has(key)) return false;
                 seen.add(key);
                 return true;
             });
+
             saveData();
+
+            if (auto) {
+                // 自动生成时不显示 Toast，静默执行
+            } else {
+                showToast('🔄 已重新生成待办');
+            }
+        }
+
+        // 手动触发生成（保留给用户应急使用）
+        function manualGenerateCycles() {
+            generateTodosFromCycles(false);
+            renderTodos();
         }
 
         // ============================================================
@@ -1643,6 +1725,21 @@
                 hours: Math.round(hours * 100) / 100,
                 detail: detail
             });
+
+            // ★ 如果这个待办是周期来源的，完成它时自动移入 doneTodos
+            if (todo.source === 'cycle') {
+                data.doneTodos.push({
+                    id: todo.id,
+                    type: todo.type,
+                    event: todo.event,
+                    dueDate: todo.dueDate || '',
+                    completedAt: new Date().toISOString(),
+                    pinned: todo.pinned || false,
+                    source: 'cycle'
+                });
+                data.todos = data.todos.filter(t => t.id !== todoId);
+            }
+
             saveData();
             closeModal();
             showToast(`⏱️ 已记录 ${Math.round(hours * 100) / 100} 小时${detail ? '（' + detail + '）' : ''}`);
@@ -1742,6 +1839,7 @@
             const dueInfo = todo.dueDate ? `📅 ${formatDate(todo.dueDate)}` : '⏳ 无截止日';
             const pinnedClass = todo.pinned ? 'pinned' : '';
             const pinIcon = todo.pinned ? '<span class="pin-icon">📌</span>' : '';
+            const sourceLabel = todo.source === 'cycle' ? '<span class="source-tag">🔄</span>' : '';
 
             const timer = getTimer(todo.id);
             const timerActive = timer !== null && timer !== undefined;
@@ -1757,6 +1855,7 @@
                         <span class="type-tag" style="background:${color}20; color:${color};">${typeLabel}</span>
                         <span class="desc">${pinIcon} ${escapeHtml(todo.event)}</span>
                         <span class="due">${dueInfo}</span>
+                        ${sourceLabel}
                         ${timerStatus}
                     </div>
                     <div class="actions">
@@ -1809,11 +1908,12 @@
             let html = `<div class="done-list">`;
             data.doneTodos.forEach(d => {
                 const color = getTypeColor(d.type);
+                const sourceLabel = d.source === 'cycle' ? '🔄' : '';
                 html += `
                     <div class="done-item">
                         <div class="done-info">
                             <span class="done-type" style="background:${color}20; color:${color};">${getTypeLabel(d.type)}</span>
-                            <span>${escapeHtml(d.event)}</span>
+                            <span>${escapeHtml(d.event)} ${sourceLabel}</span>
                             <span class="done-time">✅ ${formatDateTime(d.completedAt)}</span>
                         </div>
                         <div class="done-actions">
@@ -1827,7 +1927,7 @@
 
             showModal(`
                 <h3>✅ 已完成待办</h3>
-                <div class="sub">共 ${data.doneTodos.length} 项</div>
+                <div class="sub">共 ${data.doneTodos.length} 项（🔄 表示周期任务）</div>
                 ${html}
                 <div class="modal-actions">
                     <button class="btn-outline" onclick="closeModal()">关闭</button>
@@ -1846,7 +1946,8 @@
                 event: item.event,
                 dueDate: item.dueDate || '',
                 createdAt: todayStr(),
-                pinned: false
+                pinned: false,
+                source: item.source || 'manual'
             });
             saveData();
             closeModal();
@@ -1998,7 +2099,15 @@
             if (!type) type = '其他';
             if (!data.types.includes(type)) data.types.push(type);
             const due = document.getElementById('modalTodoDue').value || '';
-            data.todos.push({ id: genId(), type, event, dueDate: due, createdAt: todayStr(), pinned: false });
+            data.todos.push({
+                id: genId(),
+                type,
+                event,
+                dueDate: due,
+                createdAt: todayStr(),
+                pinned: false,
+                source: 'manual'
+            });
             saveData();
             closeModal();
             showToast('✅ 待办已添加');
@@ -2083,6 +2192,7 @@
             const todo = data.todos.find(t => t.id === todoId);
             if (!todo) { showToast('待办不存在'); return; }
             const detail = document.getElementById('modalDetail').value.trim() || '';
+
             data.records.push({
                 id: 'r' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
                 date: todayStr(),
@@ -2091,6 +2201,21 @@
                 hours: Math.round(hours * 100) / 100,
                 detail: detail
             });
+
+            // 如果这是周期待办，完成它
+            if (todo.source === 'cycle') {
+                data.doneTodos.push({
+                    id: todo.id,
+                    type: todo.type,
+                    event: todo.event,
+                    dueDate: todo.dueDate || '',
+                    completedAt: new Date().toISOString(),
+                    pinned: todo.pinned || false,
+                    source: 'cycle'
+                });
+                data.todos = data.todos.filter(t => t.id !== todoId);
+            }
+
             saveData();
             closeModal();
             showToast(`⏱️ 已记录 ${Math.round(hours * 100) / 100} 小时${detail ? '（' + detail + '）' : ''}`);
@@ -2103,13 +2228,15 @@
             if (data.timers[todoId]) {
                 delete data.timers[todoId];
             }
+
             data.doneTodos.push({
                 id: todo.id,
                 type: todo.type,
                 event: todo.event,
                 dueDate: todo.dueDate || '',
                 completedAt: new Date().toISOString(),
-                pinned: todo.pinned || false
+                pinned: todo.pinned || false,
+                source: todo.source || 'manual'
             });
             data.todos = data.todos.filter(t => t.id !== todoId);
             saveData();
@@ -2195,7 +2322,7 @@
         }
 
         // ============================================================
-        //  周期任务（统一风格，按类型分组，删除按钮无底色）
+        //  周期任务
         // ============================================================
         function renderCycles() {
             const container = document.getElementById('cycleListContainer');
@@ -2289,6 +2416,10 @@
             saveData();
             showToast('✅ 周期任务已添加');
             renderCycles();
+            // ★ 添加后自动生成待办
+            generateTodosFromCycles(true);
+            renderTodos();
+            // 清空表单
             document.getElementById('cycleEvent').value = '';
             document.getElementById('cycleType').value = '';
         }
@@ -2403,14 +2534,22 @@
             closeModal();
             showToast('✅ 周期任务已更新');
             renderCycles();
+            // ★ 编辑后自动重新生成待办
+            generateTodosFromCycles(true);
+            renderTodos();
         }
 
         function toggleCycle(id) {
             const cycle = data.cycles.find(c => c.id === id);
-            if (cycle) { cycle.active = !cycle.active;
+            if (cycle) {
+                cycle.active = !cycle.active;
                 saveData();
                 renderCycles();
-                showToast(cycle.active ? '▶️ 已启用' : '⏸️ 已停用'); }
+                showToast(cycle.active ? '▶️ 已启用' : '⏸️ 已停用');
+                // ★ 切换状态后自动重新生成待办
+                generateTodosFromCycles(true);
+                renderTodos();
+            }
         }
 
         function deleteCycle(id) {
@@ -2419,6 +2558,9 @@
             saveData();
             renderCycles();
             showToast('已删除');
+            // 删除后重新生成，清理对应的待办
+            generateTodosFromCycles(true);
+            renderTodos();
         }
 
         // ============================================================
@@ -2490,7 +2632,7 @@
         }
 
         // ============================================================
-        //  日历视图（周一为首日）
+        //  日历
         // ============================================================
         let calendarYear = new Date().getFullYear();
         let calendarMonth = new Date().getMonth();
@@ -2500,10 +2642,8 @@
             const label = document.getElementById('calendarMonthLabel');
             label.textContent = `${calendarYear}年${calendarMonth + 1}月`;
 
-            // 周一为首日：计算当月第一天是星期几（周一=0, 周日=6）
             const firstDayOfMonth = new Date(calendarYear, calendarMonth, 1).getDay();
             const startOffset = (firstDayOfMonth === 0) ? 6 : firstDayOfMonth - 1;
-
             const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
             const today = todayStr();
 
@@ -2570,11 +2710,7 @@
             const dayType = getDayType(dateStr);
             const typeLabel = dayType === 'holiday' ? '🎉 节假日' : '🏢 工作日';
 
-            // 检查是否已有特殊标记
             const existingSpecial = isSpecialDate(dateStr);
-            const isHolidayNow = dayType === 'holiday';
-            const isWorkdayNow = dayType === 'workday';
-
             let specialActionsHtml = '';
             if (existingSpecial) {
                 specialActionsHtml = `
@@ -2688,6 +2824,7 @@
                     if (data.notes === undefined) data.notes = '';
                     data.records.forEach(r => { if (!r.id) r.id = 'r' + Date.now() + '_' + Math.random().toString(36)
                             .slice(2, 6); });
+                    data.todos.forEach(t => { if (!t.source) t.source = 'manual'; });
                     saveData();
                     showToast('✅ 数据导入成功');
                     document.getElementById('importFile').value = '';
@@ -2748,7 +2885,8 @@
         //  初始化
         // ============================================================
         function init() {
-            generateTodosFromCycles();
+            // ★★★ 核心升级：每次打开页面自动生成未来 90 天的周期待办 ★★★
+            generateTodosFromCycles(true);
 
             const filterType = document.getElementById('filterType');
             filterType.innerHTML = '<option value="">全部类型</option>';
