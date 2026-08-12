@@ -25,7 +25,6 @@
             width: 100%;
         }
 
-        /* ===== 左侧边栏 ===== */
         .sidebar {
             width: 170px;
             min-width: 170px;
@@ -146,7 +145,6 @@
             }
         }
 
-        /* ===== 右侧内容 ===== */
         .main-content {
             flex: 1;
             overflow-y: auto;
@@ -160,7 +158,6 @@
             }
         }
 
-        /* ===== 卡片 ===== */
         .card {
             background: #ffffff;
             border-radius: 14px;
@@ -203,7 +200,6 @@
             display: block;
         }
 
-        /* ===== 统计栏 ===== */
         .stats-row {
             display: flex;
             gap: 14px;
@@ -235,7 +231,6 @@
             margin-left: 2px;
         }
 
-        /* ===== 重要事项 ===== */
         .notes-editor {
             width: 100%;
             min-height: 56px;
@@ -257,7 +252,6 @@
             color: #94a3b8;
         }
 
-        /* ===== 待办 ===== */
         .todo-section {
             margin-bottom: 8px;
         }
@@ -419,7 +413,6 @@
             font-size: 14px;
         }
 
-        /* ===== 历史表格 ===== */
         .table-wrap {
             overflow-x: auto;
             margin-top: 4px;
@@ -474,7 +467,6 @@
             padding: 5px 8px;
         }
 
-        /* ===== 模态框 ===== */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -620,7 +612,6 @@
             background: #b0bac9;
         }
 
-        /* ===== 日历（周一为首日） ===== */
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -793,7 +784,6 @@
             opacity: 0.5;
         }
 
-        /* ===== 已完成列表 ===== */
         .done-list {
             display: flex;
             flex-direction: column;
@@ -856,7 +846,6 @@
             background: #fee2e2;
         }
 
-        /* ===== 特殊日期管理 ===== */
         .special-date-list {
             max-height: 260px;
             overflow-y: auto;
@@ -953,7 +942,6 @@
             background: #4f46e5;
         }
 
-        /* ===== 周期任务卡片页 ===== */
         .cycle-form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -1103,7 +1091,6 @@
 
     <div class="app-layout">
 
-        <!-- ===== 左侧边栏 ===== -->
         <div class="sidebar">
             <div class="logo">📋 <span>工作记录</span></div>
 
@@ -1128,7 +1115,6 @@
             </div>
         </div>
 
-        <!-- ===== 右侧内容 ===== -->
         <div class="main-content">
 
             <!-- ===== 页面：待办 ===== -->
@@ -1233,7 +1219,6 @@
                         <span class="badge">自动生成待办</span>
                     </div>
 
-                    <!-- 添加表单 -->
                     <div class="cycle-form-grid">
                         <div class="field">
                             <label>事件 *</label>
@@ -1274,7 +1259,6 @@
                         </div>
                     </div>
 
-                    <!-- 已有周期任务列表（带滚动条） -->
                     <div class="cycle-list-section">
                         <div class="section-label">已有周期任务</div>
                         <div class="cycle-list-wrap" id="cycleListContainer">
@@ -1287,8 +1271,8 @@
                 </div>
             </div>
 
-        </div><!-- /main-content -->
-    </div><!-- /app-layout -->
+        </div>
+    </div>
 
     <div id="modalContainer"></div>
     <div id="toast" class="toast"></div>
@@ -1337,7 +1321,6 @@
                     });
                     parsed.records.forEach(r => { if (!r.id) r.id = 'r' + Date.now() + '_' + Math.random().toString(36)
                             .slice(2, 6); });
-                    // 兼容旧数据：给没有 source 的 todo 加默认值
                     parsed.todos.forEach(t => { if (!t.source) t.source = 'manual'; });
                     return parsed;
                 }
@@ -1498,7 +1481,7 @@
         }
 
         // ============================================================
-        //  ★★★ 核心升级：自动生成周期任务（防重复） ★★★
+        //  周期任务引擎（自动生成 + 防重复）
         // ============================================================
         function getNextCycleDate(cycle) {
             const today = todayStr();
@@ -1553,31 +1536,25 @@
 
         function generateTodosFromCycles(auto = true) {
             const today = todayStr();
-            // 未来 90 天窗口
             const horizon = getDateOffset(today, 90);
 
             data.cycles.forEach(cycle => {
                 if (!cycle.active) return;
 
-                // 计算这个周期任务的所有应生成日期（从今天到 horizon）
                 let due = getNextCycleDate(cycle);
                 if (!due) return;
-
-                // 如果第一个日期就已经超出 horizon，跳过
                 if (due > horizon) return;
 
-                // 遍历所有应生成日期
                 while (due <= horizon) {
-                    // ★★★ 关键防重复逻辑 ★★★
-                    // 检查是否已经存在该日期、该事件的待办（无论是否已完成）
+                    // ★ 检查是否已有该日期、该事件的待办（未完成）
                     const existingTodo = data.todos.find(t =>
                         t.event === cycle.event &&
                         t.type === cycle.type &&
                         t.dueDate === due &&
-                        t.source === 'cycle'  // 只检查周期来源的待办
+                        t.source === 'cycle'
                     );
 
-                    // 检查是否已经在 doneTodos 中（已完成的周期待办）
+                    // ★ 检查是否已经在 doneTodos 中
                     const existingDone = data.doneTodos.find(d =>
                         d.event === cycle.event &&
                         d.type === cycle.type &&
@@ -1585,7 +1562,7 @@
                         d.source === 'cycle'
                     );
 
-                    // 如果既没有待办、也没有已完成记录，才生成新的
+                    // ★ 只有既没有待办、也没有已完成记录，才生成新的
                     if (!existingTodo && !existingDone) {
                         data.todos.push({
                             id: genId(),
@@ -1594,7 +1571,7 @@
                             dueDate: due,
                             createdAt: today,
                             pinned: false,
-                            source: 'cycle'  // ★ 标记来源
+                            source: 'cycle'
                         });
                     }
 
@@ -1602,7 +1579,6 @@
                     if (cycle.cycleType === 'days') {
                         due = getDateOffset(due, cycle.intervalDays);
                     } else if (cycle.cycleType === 'monthlyDay') {
-                        // 跳到下个月
                         const parts = due.split('-').map(Number);
                         let month = parts[1] + 1;
                         let year = parts[0];
@@ -1610,7 +1586,6 @@
                             year++; }
                         const day = cycle.monthlyDay || 1;
                         due = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        // 检查日期是否有效
                         let d = new Date(due + 'T00:00:00');
                         if (d.getMonth() + 1 !== month) {
                             month++;
@@ -1619,7 +1594,6 @@
                             due = `${year}-${String(month).padStart(2, '0')}-01`;
                         }
                     } else if (cycle.cycleType === 'monthlyWorkday') {
-                        // 跳到下个月
                         const parts = due.split('-').map(Number);
                         let month = parts[1] + 1;
                         let year = parts[0];
@@ -1632,7 +1606,6 @@
                 }
             });
 
-            // 去重（保留第一个）
             const seen = new Set();
             data.todos = data.todos.filter(t => {
                 const key = t.id + '|' + t.source;
@@ -1642,15 +1615,11 @@
             });
 
             saveData();
-
-            if (auto) {
-                // 自动生成时不显示 Toast，静默执行
-            } else {
+            if (!auto) {
                 showToast('🔄 已重新生成待办');
             }
         }
 
-        // 手动触发生成（保留给用户应急使用）
         function manualGenerateCycles() {
             generateTodosFromCycles(false);
             renderTodos();
@@ -1686,9 +1655,15 @@
             const todo = data.todos.find(t => t.id === todoId);
             if (!todo) { showToast('待办不存在'); return; }
 
+            // ★ 记录工时弹窗增加日期选择器（默认今天）
             showModal(`
                 <h3>⏱️ 记录工时</h3>
                 <div class="sub">为「${escapeHtml(todo.event)}」记录工作时间（计时 ${hours.toFixed(2)} 小时）</div>
+                <div class="field">
+                    <label>日期 *</label>
+                    <input type="date" id="modalRecordDate" value="${todayStr()}">
+                    <div class="hint">可修改为过去的日期进行补录</div>
+                </div>
                 <div class="field">
                     <label>今天花费 (小时) *</label>
                     <input type="number" id="modalHours" step="0.01" min="0.01" value="${hours.toFixed(2)}" placeholder="例如 1.50">
@@ -1711,6 +1686,8 @@
         }
 
         function confirmLogTimeFromTimer(todoId) {
+            const recordDate = document.getElementById('modalRecordDate').value;
+            if (!recordDate) { showToast('请选择日期'); return; }
             const hours = parseFloat(document.getElementById('modalHours').value);
             if (isNaN(hours) || hours <= 0) { showToast('请输入有效的小时数（大于0）'); return; }
             const todo = data.todos.find(t => t.id === todoId);
@@ -1719,26 +1696,16 @@
 
             data.records.push({
                 id: 'r' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                date: todayStr(),
+                date: recordDate,
                 type: todo.type,
                 event: todo.event,
                 hours: Math.round(hours * 100) / 100,
                 detail: detail
             });
 
-            // ★ 如果这个待办是周期来源的，完成它时自动移入 doneTodos
-            if (todo.source === 'cycle') {
-                data.doneTodos.push({
-                    id: todo.id,
-                    type: todo.type,
-                    event: todo.event,
-                    dueDate: todo.dueDate || '',
-                    completedAt: new Date().toISOString(),
-                    pinned: todo.pinned || false,
-                    source: 'cycle'
-                });
-                data.todos = data.todos.filter(t => t.id !== todoId);
-            }
+            // ★★★ 修复：记录工时不再自动完成待办 ★★★
+            // 只有点击“✅ 完成”按钮才会移入已完成列表
+            // 这里只保存记录，待办保留
 
             saveData();
             closeModal();
@@ -1897,7 +1864,7 @@
         }
 
         // ============================================================
-        //  已完成待办
+        //  已完成待办（★ 按时间倒序 + 按钮样式调整 ★）
         // ============================================================
         function openDoneList() {
             if (data.doneTodos.length === 0) {
@@ -1905,8 +1872,13 @@
                 return;
             }
 
+            // ★ 按 completedAt 从新到旧排序
+            const sorted = [...data.doneTodos].sort((a, b) => {
+                return new Date(b.completedAt) - new Date(a.completedAt);
+            });
+
             let html = `<div class="done-list">`;
-            data.doneTodos.forEach(d => {
+            sorted.forEach(d => {
                 const color = getTypeColor(d.type);
                 const sourceLabel = d.source === 'cycle' ? '🔄' : '';
                 html += `
@@ -1925,13 +1897,14 @@
             });
             html += `</div>`;
 
+            // ★ 按钮样式调整："清空全部"改为边框按钮，位置与"关闭"调换
             showModal(`
                 <h3>✅ 已完成待办</h3>
                 <div class="sub">共 ${data.doneTodos.length} 项（🔄 表示周期任务）</div>
                 ${html}
-                <div class="modal-actions">
+                <div class="modal-actions" style="justify-content:space-between;">
+                    <button class="btn-outline btn-sm" onclick="clearAllDone()" style="color:#ef4444;border-color:#ef4444;">🗑️ 清空全部</button>
                     <button class="btn-outline" onclick="closeModal()">关闭</button>
-                    <button class="btn-danger btn-sm" onclick="clearAllDone()" style="color:#ef4444;">🗑️ 清空全部</button>
                 </div>
             `);
         }
@@ -2159,12 +2132,18 @@
             showToast('✅ 待办已更新');
         }
 
+        // ★ 记录工时弹窗：增加日期选择器
         function openLogTime(todoId) {
             const todo = data.todos.find(t => t.id === todoId);
             if (!todo) { showToast('待办不存在'); return; }
             showModal(`
                 <h3>⏱️ 记录工时</h3>
                 <div class="sub">为「${escapeHtml(todo.event)}」记录今天的工作时间</div>
+                <div class="field">
+                    <label>日期 *</label>
+                    <input type="date" id="modalRecordDate" value="${todayStr()}">
+                    <div class="hint">可修改为过去的日期进行补录</div>
+                </div>
                 <div class="field">
                     <label>今天花费 (小时) *</label>
                     <input type="number" id="modalHours" step="0.01" min="0.01" placeholder="例如 1.50">
@@ -2187,6 +2166,8 @@
         }
 
         function confirmLogTime(todoId) {
+            const recordDate = document.getElementById('modalRecordDate').value;
+            if (!recordDate) { showToast('请选择日期'); return; }
             const hours = parseFloat(document.getElementById('modalHours').value);
             if (isNaN(hours) || hours <= 0) { showToast('请输入有效的小时数（大于0）'); return; }
             const todo = data.todos.find(t => t.id === todoId);
@@ -2195,32 +2176,23 @@
 
             data.records.push({
                 id: 'r' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                date: todayStr(),
+                date: recordDate,
                 type: todo.type,
                 event: todo.event,
                 hours: Math.round(hours * 100) / 100,
                 detail: detail
             });
 
-            // 如果这是周期待办，完成它
-            if (todo.source === 'cycle') {
-                data.doneTodos.push({
-                    id: todo.id,
-                    type: todo.type,
-                    event: todo.event,
-                    dueDate: todo.dueDate || '',
-                    completedAt: new Date().toISOString(),
-                    pinned: todo.pinned || false,
-                    source: 'cycle'
-                });
-                data.todos = data.todos.filter(t => t.id !== todoId);
-            }
+            // ★★★ 修复：记录工时不再自动完成待办 ★★★
+            // 只有点击“✅ 完成”按钮才会移入已完成列表
+            // 这里只保存记录，待办保留
 
             saveData();
             closeModal();
             showToast(`⏱️ 已记录 ${Math.round(hours * 100) / 100} 小时${detail ? '（' + detail + '）' : ''}`);
         }
 
+        // ★ 完成待办（移入已完成列表）
         function completeTodo(todoId) {
             if (!confirm('确认完成此待办？它将移入已完成列表。')) return;
             const todo = data.todos.find(t => t.id === todoId);
@@ -2416,10 +2388,8 @@
             saveData();
             showToast('✅ 周期任务已添加');
             renderCycles();
-            // ★ 添加后自动生成待办
             generateTodosFromCycles(true);
             renderTodos();
-            // 清空表单
             document.getElementById('cycleEvent').value = '';
             document.getElementById('cycleType').value = '';
         }
@@ -2534,7 +2504,6 @@
             closeModal();
             showToast('✅ 周期任务已更新');
             renderCycles();
-            // ★ 编辑后自动重新生成待办
             generateTodosFromCycles(true);
             renderTodos();
         }
@@ -2546,7 +2515,6 @@
                 saveData();
                 renderCycles();
                 showToast(cycle.active ? '▶️ 已启用' : '⏸️ 已停用');
-                // ★ 切换状态后自动重新生成待办
                 generateTodosFromCycles(true);
                 renderTodos();
             }
@@ -2558,13 +2526,12 @@
             saveData();
             renderCycles();
             showToast('已删除');
-            // 删除后重新生成，清理对应的待办
             generateTodosFromCycles(true);
             renderTodos();
         }
 
         // ============================================================
-        //  特殊日期管理（弹窗）
+        //  特殊日期管理
         // ============================================================
         function openSpecialDateManager() {
             let listHtml = '';
@@ -2885,7 +2852,6 @@
         //  初始化
         // ============================================================
         function init() {
-            // ★★★ 核心升级：每次打开页面自动生成未来 90 天的周期待办 ★★★
             generateTodosFromCycles(true);
 
             const filterType = document.getElementById('filterType');
