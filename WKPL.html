@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>我的工作记录 · 待办追踪</title>
+    <!-- Chart.js 轻量图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js">
+    </script>
     <style>
         * {
             box-sizing: border-box;
@@ -200,6 +203,138 @@
             display: block;
         }
 
+        /* ===== 统计专用样式 ===== */
+        .stats-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .stats-filter .btn-group {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .stats-filter .btn-group button {
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .stats-filter .btn-group button:hover {
+            background: #e2e8f0;
+        }
+        .stats-filter .btn-group button.active {
+            background: #6366f1;
+            color: #fff;
+        }
+        .stats-filter .date-inputs {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .stats-filter .date-inputs input[type="date"] {
+            padding: 6px 10px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+            width: 150px;
+        }
+        .stats-filter .date-inputs input[type="date"]:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .stats-filter .date-inputs .sep {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 600px) {
+            .stats-cards {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .stats-cards .stat-card {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 12px 16px;
+            text-align: center;
+            border: 1px solid #eef2f6;
+        }
+        .stats-cards .stat-card .stat-label {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .stats-cards .stat-card .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+        }
+        .stats-cards .stat-card .stat-value .unit {
+            font-size: 14px;
+            font-weight: 400;
+            color: #94a3b8;
+            margin-left: 2px;
+        }
+        .stats-cards .stat-card .stat-sub {
+            font-size: 13px;
+            color: #6366f1;
+            margin-top: 2px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 800px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .chart-box {
+            background: #fafbfc;
+            border-radius: 10px;
+            padding: 12px 14px;
+            border: 1px solid #f0f2f5;
+            position: relative;
+            min-height: 260px;
+        }
+        .chart-box .chart-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .chart-box canvas {
+            max-height: 220px;
+            max-width: 100%;
+        }
+
+        .stats-empty {
+            color: #94a3b8;
+            text-align: center;
+            padding: 40px 0;
+            font-size: 15px;
+        }
+
+        /* ===== 其他已有样式 ===== */
         .stats-row {
             display: flex;
             gap: 14px;
@@ -404,6 +539,14 @@
         .btn-sm {
             padding: 4px 10px;
             font-size: 12px;
+        }
+
+        .btn-quick {
+            background: #f59e0b;
+            color: #fff;
+        }
+        .btn-quick:hover {
+            background: #d97706;
         }
 
         .empty-state {
@@ -1106,6 +1249,10 @@
             <button data-page="cycles" onclick="switchPage('cycles')">
                 🔄 周期任务
             </button>
+            <!-- ★★★ 新增：统计页面 ★★★ -->
+            <button data-page="stats" onclick="switchPage('stats')">
+                📊 统计
+            </button>
 
             <div class="sidebar-export">
                 <button onclick="exportJSON()">📥 <span>导出 JSON</span></button>
@@ -1131,6 +1278,7 @@
                     <div class="card-header">
                         <h2>⏳ 今天要做的事 <span class="badge" id="todoCount">0</span></h2>
                         <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <button class="btn-quick btn-sm" onclick="openQuickRecord()" title="快速记录已完成的一次性事务">⚡ 快速记录</button>
                             <button class="btn-outline btn-sm" onclick="openDoneList()">✅ 已完成</button>
                             <button class="btn-primary btn-sm" onclick="openAddTodo()">➕ 添加待办</button>
                         </div>
@@ -1271,6 +1419,62 @@
                 </div>
             </div>
 
+            <!-- ===== ★★★ 页面：统计 ★★★ ===== -->
+            <div id="page-stats" class="page">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📊 工时统计</h2>
+                        <span class="badge" id="statsRecordCount">0 条记录</span>
+                    </div>
+
+                    <!-- 筛选器 -->
+                    <div class="stats-filter">
+                        <div class="btn-group" id="statsPeriodGroup">
+                            <button class="active" data-period="week" onclick="setStatsPeriod('week')">本周</button>
+                            <button data-period="month" onclick="setStatsPeriod('month')">本月</button>
+                            <button data-period="custom" onclick="setStatsPeriod('custom')">自定义</button>
+                        </div>
+                        <div class="date-inputs" id="statsDateInputs">
+                            <input type="date" id="statsDateStart">
+                            <span class="sep">—</span>
+                            <input type="date" id="statsDateEnd">
+                            <button class="btn-primary btn-sm" onclick="updateStats()">更新</button>
+                        </div>
+                    </div>
+
+                    <!-- 总览卡片 -->
+                    <div class="stats-cards" id="statsCards">
+                        <div class="stat-card">
+                            <div class="stat-label">总工时</div>
+                            <div class="stat-value" id="statsTotal">0<span class="unit">h</span></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">日均工时</div>
+                            <div class="stat-value" id="statsDaily">0<span class="unit">h</span></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">最耗时类型</div>
+                            <div class="stat-value" id="statsTopType">-</div>
+                            <div class="stat-sub" id="statsTopTypeHours"></div>
+                        </div>
+                    </div>
+
+                    <!-- 图表 -->
+                    <div class="charts-grid">
+                        <div class="chart-box">
+                            <div class="chart-title">🔵 类型分布（按累计工时）</div>
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <div class="chart-title">📈 每日趋势</div>
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div id="statsEmpty" class="stats-empty hidden">📭 选定时间段内暂无记录</div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -1334,6 +1538,10 @@
             refreshTypeOptions();
             saveNotes();
             updateSidebarBadges();
+            // 如果当前在统计页，刷新统计
+            if (currentPage === 'stats') {
+                updateStats();
+            }
         }
 
         function genId() {
@@ -1481,7 +1689,7 @@
         }
 
         // ============================================================
-        //  周期任务引擎（自动生成 + 防重复）
+        //  周期任务引擎
         // ============================================================
         function getNextCycleDate(cycle) {
             const today = todayStr();
@@ -1546,7 +1754,6 @@
                 if (due > horizon) return;
 
                 while (due <= horizon) {
-                    // ★ 检查是否已有该日期、该事件的待办（未完成）
                     const existingTodo = data.todos.find(t =>
                         t.event === cycle.event &&
                         t.type === cycle.type &&
@@ -1554,7 +1761,6 @@
                         t.source === 'cycle'
                     );
 
-                    // ★ 检查是否已经在 doneTodos 中
                     const existingDone = data.doneTodos.find(d =>
                         d.event === cycle.event &&
                         d.type === cycle.type &&
@@ -1562,7 +1768,6 @@
                         d.source === 'cycle'
                     );
 
-                    // ★ 只有既没有待办、也没有已完成记录，才生成新的
                     if (!existingTodo && !existingDone) {
                         data.todos.push({
                             id: genId(),
@@ -1575,7 +1780,6 @@
                         });
                     }
 
-                    // 计算下一个日期
                     if (cycle.cycleType === 'days') {
                         due = getDateOffset(due, cycle.intervalDays);
                     } else if (cycle.cycleType === 'monthlyDay') {
@@ -1655,7 +1859,6 @@
             const todo = data.todos.find(t => t.id === todoId);
             if (!todo) { showToast('待办不存在'); return; }
 
-            // ★ 记录工时弹窗增加日期选择器（默认今天）
             showModal(`
                 <h3>⏱️ 记录工时</h3>
                 <div class="sub">为「${escapeHtml(todo.event)}」记录工作时间（计时 ${hours.toFixed(2)} 小时）</div>
@@ -1703,10 +1906,6 @@
                 detail: detail
             });
 
-            // ★★★ 修复：记录工时不再自动完成待办 ★★★
-            // 只有点击“✅ 完成”按钮才会移入已完成列表
-            // 这里只保存记录，待办保留
-
             saveData();
             closeModal();
             showToast(`⏱️ 已记录 ${Math.round(hours * 100) / 100} 小时${detail ? '（' + detail + '）' : ''}`);
@@ -1730,6 +1929,10 @@
                 renderRecords(); }
             if (page === 'todo') renderTodos();
             if (page === 'cycles') renderCycles();
+            if (page === 'stats') {
+                // 初始化统计页面
+                initStatsPage();
+            }
         }
 
         // ============================================================
@@ -1864,7 +2067,7 @@
         }
 
         // ============================================================
-        //  已完成待办（★ 按时间倒序 + 按钮样式调整 ★）
+        //  已完成待办
         // ============================================================
         function openDoneList() {
             if (data.doneTodos.length === 0) {
@@ -1872,7 +2075,6 @@
                 return;
             }
 
-            // ★ 按 completedAt 从新到旧排序
             const sorted = [...data.doneTodos].sort((a, b) => {
                 return new Date(b.completedAt) - new Date(a.completedAt);
             });
@@ -1897,7 +2099,6 @@
             });
             html += `</div>`;
 
-            // ★ 按钮样式调整："清空全部"改为边框按钮，位置与"关闭"调换
             showModal(`
                 <h3>✅ 已完成待办</h3>
                 <div class="sub">共 ${data.doneTodos.length} 项（🔄 表示周期任务）</div>
@@ -1943,6 +2144,81 @@
             saveData();
             closeModal();
             showToast('已清空');
+        }
+
+        // ============================================================
+        //  快速记录
+        // ============================================================
+        function openQuickRecord() {
+            const types = getTypeOptions();
+            showModal(`
+                <h3>⚡ 快速记录</h3>
+                <div class="sub">记录一件已经完成的一次性事务，不会生成待办</div>
+                <div class="field">
+                    <label>日期 *</label>
+                    <input type="date" id="quickRecordDate" value="${todayStr()}">
+                    <div class="hint">可修改为过去的日期进行补录</div>
+                </div>
+                <div class="field">
+                    <label>类型</label>
+                    <input list="typeDatalist" id="quickRecordType" placeholder="输入或选择类型" value="其他">
+                    <datalist id="typeDatalist">${types.map(t => `<option value="${t}">`).join('')}</datalist>
+                    <div class="hint">输入新类型后自动保存</div>
+                </div>
+                <div class="field">
+                    <label>事件描述 *</label>
+                    <input id="quickRecordEvent" placeholder="例如：回复了客户邮件">
+                </div>
+                <div class="field">
+                    <label>耗时 (小时) *</label>
+                    <input type="number" id="quickRecordHours" step="0.01" min="0.01" placeholder="例如 0.50">
+                    <div class="hint">可填小数，如 0.50 表示半小时</div>
+                </div>
+                <div class="field">
+                    <label>细节（可选）</label>
+                    <input id="quickRecordDetail" placeholder="例如：处理了某某客户的问题">
+                    <div class="hint">补充说明，可在历史记录中搜索</div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-outline" onclick="closeModal()">取消</button>
+                    <button class="btn-quick" onclick="confirmQuickRecord()">⚡ 保存记录</button>
+                </div>
+            `);
+            refreshTypeOptions();
+            setTimeout(() => {
+                const el = document.getElementById('quickRecordEvent');
+                if (el) el.focus();
+            }, 100);
+        }
+
+        function confirmQuickRecord() {
+            const date = document.getElementById('quickRecordDate').value;
+            if (!date) { showToast('请选择日期'); return; }
+
+            let type = document.getElementById('quickRecordType').value.trim();
+            if (!type) type = '其他';
+            if (!data.types.includes(type)) data.types.push(type);
+
+            const event = document.getElementById('quickRecordEvent').value.trim();
+            if (!event) { showToast('请输入事件描述'); return; }
+
+            const hours = parseFloat(document.getElementById('quickRecordHours').value);
+            if (isNaN(hours) || hours <= 0) { showToast('请输入有效的小时数（大于0）'); return; }
+
+            const detail = document.getElementById('quickRecordDetail').value.trim() || '';
+
+            data.records.push({
+                id: 'r' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                date: date,
+                type: type,
+                event: event,
+                hours: Math.round(hours * 100) / 100,
+                detail: detail
+            });
+
+            saveData();
+            closeModal();
+            showToast(`⚡ 已记录「${event}」${Math.round(hours * 100) / 100} 小时${detail ? '（' + detail + '）' : ''}`);
         }
 
         // ============================================================
@@ -2132,7 +2408,6 @@
             showToast('✅ 待办已更新');
         }
 
-        // ★ 记录工时弹窗：增加日期选择器
         function openLogTime(todoId) {
             const todo = data.todos.find(t => t.id === todoId);
             if (!todo) { showToast('待办不存在'); return; }
@@ -2183,16 +2458,11 @@
                 detail: detail
             });
 
-            // ★★★ 修复：记录工时不再自动完成待办 ★★★
-            // 只有点击“✅ 完成”按钮才会移入已完成列表
-            // 这里只保存记录，待办保留
-
             saveData();
             closeModal();
             showToast(`⏱️ 已记录 ${Math.round(hours * 100) / 100} 小时${detail ? '（' + detail + '）' : ''}`);
         }
 
-        // ★ 完成待办（移入已完成列表）
         function completeTodo(todoId) {
             if (!confirm('确认完成此待办？它将移入已完成列表。')) return;
             const todo = data.todos.find(t => t.id === todoId);
@@ -2736,6 +3006,249 @@
         }
 
         // ============================================================
+        //  ★★★ 统计页面 ★★★
+        // ============================================================
+        let statsChartPie = null;
+        let statsChartBar = null;
+        let statsCurrentPeriod = 'week';
+
+        function initStatsPage() {
+            // 设置默认日期范围
+            setStatsPeriod('week');
+            updateStats();
+        }
+
+        function setStatsPeriod(period) {
+            statsCurrentPeriod = period;
+            // 更新按钮状态
+            document.querySelectorAll('#statsPeriodGroup button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.period === period);
+            });
+
+            const today = todayStr();
+            const startInput = document.getElementById('statsDateStart');
+            const endInput = document.getElementById('statsDateEnd');
+
+            if (period === 'week') {
+                // 本周：周一 ~ 周日
+                const d = new Date();
+                const day = d.getDay();
+                const diff = (day === 0 ? 6 : day - 1);
+                const monday = new Date(d);
+                monday.setDate(d.getDate() - diff);
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+                startInput.value = monday.toISOString().slice(0, 10);
+                endInput.value = sunday.toISOString().slice(0, 10);
+            } else if (period === 'month') {
+                // 本月：1号 ~ 今天
+                const d = new Date();
+                const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
+                startInput.value = firstDay.toISOString().slice(0, 10);
+                endInput.value = today;
+            } else {
+                // custom: 保留用户已选的值，如果没有则设为今天
+                if (!startInput.value) startInput.value = today;
+                if (!endInput.value) endInput.value = today;
+            }
+            updateStats();
+        }
+
+        function updateStats() {
+            const start = document.getElementById('statsDateStart').value;
+            const end = document.getElementById('statsDateEnd').value;
+            if (!start || !end) {
+                showToast('请选择完整的日期范围');
+                return;
+            }
+            if (start > end) {
+                showToast('开始日期不能晚于结束日期');
+                return;
+            }
+
+            // 筛选记录
+            const filtered = data.records.filter(r => r.date >= start && r.date <= end);
+            const countEl = document.getElementById('statsRecordCount');
+            countEl.textContent = `${filtered.length} 条记录`;
+
+            const emptyEl = document.getElementById('statsEmpty');
+            if (filtered.length === 0) {
+                emptyEl.classList.remove('hidden');
+                document.getElementById('statsCards').style.display = 'none';
+                document.querySelector('.charts-grid').style.display = 'none';
+                return;
+            }
+            emptyEl.classList.add('hidden');
+            document.getElementById('statsCards').style.display = 'grid';
+            document.querySelector('.charts-grid').style.display = 'grid';
+
+            // ---- 总览卡片 ----
+            const totalHours = filtered.reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0);
+            document.getElementById('statsTotal').innerHTML = totalHours.toFixed(2) + '<span class="unit">h</span>';
+
+            // 日均工时（按实际有记录的天数算）
+            const daysSet = new Set(filtered.map(r => r.date));
+            const daysCount = daysSet.size;
+            const dailyAvg = daysCount > 0 ? totalHours / daysCount : 0;
+            document.getElementById('statsDaily').innerHTML = dailyAvg.toFixed(2) + '<span class="unit">h</span>';
+
+            // 最耗时类型
+            const typeMap = {};
+            filtered.forEach(r => {
+                const t = r.type || '其他';
+                typeMap[t] = (typeMap[t] || 0) + (parseFloat(r.hours) || 0);
+            });
+            let topType = '-';
+            let topHours = 0;
+            for (const [t, h] of Object.entries(typeMap)) {
+                if (h > topHours) {
+                    topHours = h;
+                    topType = t;
+                }
+            }
+            document.getElementById('statsTopType').textContent = topType;
+            document.getElementById('statsTopTypeHours').textContent = topHours > 0 ? `${topHours.toFixed(2)}h` : '';
+
+            // ---- 更新图表 ----
+            renderPieChart(filtered);
+            renderBarChart(filtered, start, end);
+        }
+
+        function renderPieChart(filtered) {
+            const ctx = document.getElementById('pieChart').getContext('2d');
+
+            // 按类型汇总
+            const typeMap = {};
+            filtered.forEach(r => {
+                const t = r.type || '其他';
+                typeMap[t] = (typeMap[t] || 0) + (parseFloat(r.hours) || 0);
+            });
+
+            const labels = Object.keys(typeMap);
+            const values = Object.values(typeMap);
+            const colors = labels.map(t => getTypeColor(t));
+
+            if (statsChartPie) {
+                statsChartPie.destroy();
+            }
+
+            statsChartPie = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels.map(l => `${l} (${getTypeLabel(l)})`),
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 11 },
+                                padding: 10,
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                                    return `${context.label}: ${context.parsed.toFixed(2)}h (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '60%',
+                }
+            });
+        }
+
+        function renderBarChart(filtered, start, end) {
+            const ctx = document.getElementById('barChart').getContext('2d');
+
+            // 按天汇总
+            const dayMap = {};
+            const allDays = [];
+            let current = start;
+            while (current <= end) {
+                allDays.push(current);
+                dayMap[current] = 0;
+                current = getDateOffset(current, 1);
+            }
+
+            filtered.forEach(r => {
+                if (dayMap[r.date] !== undefined) {
+                    dayMap[r.date] += (parseFloat(r.hours) || 0);
+                }
+            });
+
+            const labels = allDays.map(d => d.slice(5));
+            const values = allDays.map(d => dayMap[d] || 0);
+
+            if (statsChartBar) {
+                statsChartBar.destroy();
+            }
+
+            statsChartBar = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '工时 (h)',
+                        data: values,
+                        backgroundColor: '#6366f1',
+                        borderColor: '#4f46e5',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(items) {
+                                    const idx = items[0].dataIndex;
+                                    return allDays[idx] || '';
+                                },
+                                label: function(context) {
+                                    return `${context.parsed.y.toFixed(2)}h`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: { size: 10 },
+                                callback: function(value) { return value.toFixed(1) + 'h'; }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: { size: 9 },
+                                maxRotation: 30,
+                                autoSkip: true,
+                                maxTicksLimit: 15,
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ============================================================
         //  导入 / 导出
         // ============================================================
         function exportJSON() {
@@ -2841,6 +3354,9 @@
             }
             if (currentPage === 'cycles') {
                 renderCycles();
+            }
+            if (currentPage === 'stats') {
+                updateStats();
             }
             document.getElementById('todoCount').textContent = data.todos.length;
             document.getElementById('recordCount').textContent = data.records.length;
