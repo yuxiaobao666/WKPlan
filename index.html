@@ -1,0 +1,3471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的工作记录 · 待办追踪</title>
+    <!-- Chart.js 轻量图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js">
+    </script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f7fb;
+            color: #1e293b;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-layout {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        .sidebar {
+            width: 170px;
+            min-width: 170px;
+            background: #ffffff;
+            border-right: 1px solid #f0f2f5;
+            padding: 20px 12px 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            overflow-y: auto;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        .sidebar .logo {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            padding: 4px 0 14px 0;
+            color: #0f172a;
+            border-bottom: 1px solid #f0f2f5;
+            margin-bottom: 10px;
+        }
+        .sidebar .logo span {
+            color: #6366f1;
+        }
+        .sidebar button {
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: transparent;
+            font-weight: 500;
+            font-size: 14px;
+            color: #64748b;
+            text-align: left;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar button:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+        .sidebar button.active {
+            background: #6366f1;
+            color: #fff;
+        }
+        .sidebar button.active:hover {
+            background: #4f46e5;
+        }
+        .sidebar .nav-badge {
+            font-size: 11px;
+            background: #eef2f6;
+            padding: 0 8px;
+            border-radius: 12px;
+            color: #475569;
+            margin-left: auto;
+        }
+        .sidebar button.active .nav-badge {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+        .sidebar .sidebar-export {
+            margin-top: auto;
+            border-top: 1px solid #f0f2f5;
+            padding-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .sidebar .sidebar-export button {
+            font-size: 12px;
+            padding: 6px 12px;
+            color: #94a3b8;
+        }
+        .sidebar .sidebar-export button:hover {
+            color: #1e293b;
+            background: #f1f5f9;
+        }
+
+        @media (max-width: 700px) {
+            .sidebar {
+                width: 60px;
+                min-width: 60px;
+                padding: 12px 8px;
+            }
+            .sidebar .logo {
+                font-size: 14px;
+                padding: 0 0 8px 0;
+                text-align: center;
+            }
+            .sidebar .logo span {
+                display: none;
+            }
+            .sidebar button {
+                padding: 8px 6px;
+                font-size: 12px;
+                justify-content: center;
+            }
+            .sidebar button span:not(.nav-badge) {
+                display: none;
+            }
+            .sidebar .nav-badge {
+                display: none;
+            }
+            .sidebar .sidebar-export button {
+                font-size: 10px;
+                padding: 4px 6px;
+                justify-content: center;
+            }
+            .sidebar .sidebar-export button span {
+                display: none;
+            }
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 28px 40px;
+            min-width: 0;
+        }
+
+        @media (max-width: 700px) {
+            .main-content {
+                padding: 12px 14px 24px;
+            }
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 16px 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+            border: 1px solid #f0f2f5;
+            margin-bottom: 16px;
+        }
+        .card:last-child {
+            margin-bottom: 0;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .card-header h2 {
+            font-size: 16px;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .badge {
+            background: #eef2f6;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 1px 8px;
+            border-radius: 16px;
+            color: #475569;
+        }
+
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+
+        /* ===== 统计专用样式 ===== */
+        .stats-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .stats-filter .btn-group {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .stats-filter .btn-group button {
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .stats-filter .btn-group button:hover {
+            background: #e2e8f0;
+        }
+        .stats-filter .btn-group button.active {
+            background: #6366f1;
+            color: #fff;
+        }
+        .stats-filter .date-inputs {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .stats-filter .date-inputs input[type="date"] {
+            padding: 6px 10px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+            width: 150px;
+        }
+        .stats-filter .date-inputs input[type="date"]:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .stats-filter .date-inputs .sep {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 600px) {
+            .stats-cards {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .stats-cards .stat-card {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 12px 16px;
+            text-align: center;
+            border: 1px solid #eef2f6;
+        }
+        .stats-cards .stat-card .stat-label {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .stats-cards .stat-card .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+        }
+        .stats-cards .stat-card .stat-value .unit {
+            font-size: 14px;
+            font-weight: 400;
+            color: #94a3b8;
+            margin-left: 2px;
+        }
+        .stats-cards .stat-card .stat-sub {
+            font-size: 13px;
+            color: #6366f1;
+            margin-top: 2px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 800px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .chart-box {
+            background: #fafbfc;
+            border-radius: 10px;
+            padding: 12px 14px;
+            border: 1px solid #f0f2f5;
+            position: relative;
+            min-height: 260px;
+        }
+        .chart-box .chart-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .chart-box canvas {
+            max-height: 220px;
+            max-width: 100%;
+        }
+
+        .stats-empty {
+            color: #94a3b8;
+            text-align: center;
+            padding: 40px 0;
+            font-size: 15px;
+        }
+
+        /* ===== 其他已有样式 ===== */
+        .stats-row {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 8px 16px;
+            min-width: 80px;
+            flex: 1;
+            text-align: center;
+            border: 1px solid #eef2f6;
+        }
+        .stat-item .label {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .stat-item .value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+        }
+        .stat-item .value .unit {
+            font-size: 13px;
+            font-weight: 400;
+            color: #94a3b8;
+            margin-left: 2px;
+        }
+
+        .notes-editor {
+            width: 100%;
+            min-height: 56px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            font-size: 13px;
+            line-height: 1.6;
+            background: #fafbfc;
+            transition: border 0.2s;
+        }
+        .notes-editor:focus {
+            border-color: #6366f1;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .notes-editor:empty::before {
+            content: "📌 在这里添加重要事项提醒...";
+            color: #94a3b8;
+        }
+
+        .todo-section {
+            margin-bottom: 8px;
+        }
+        .todo-section .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            padding: 4px 0 4px 0;
+            border-bottom: 1px solid #eef2f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        .todo-section .section-title:hover {
+            color: #0f172a;
+        }
+        .todo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding-top: 6px;
+        }
+        .todo-list.collapsed {
+            display: none;
+        }
+
+        .todo-item {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 6px 12px;
+            border-left: 4px solid #6366f1;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            transition: background 0.15s;
+            font-size: 13px;
+        }
+        .todo-item:hover {
+            background: #f1f5f9;
+        }
+        .todo-item.pinned {
+            background: #eef2ff;
+            border-left-color: #f59e0b;
+        }
+        .todo-item.pinned:hover {
+            background: #e4e7f7;
+        }
+        .todo-item .info {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 120px;
+        }
+        .todo-item .info .type-tag {
+            font-size: 10px;
+            font-weight: 600;
+            background: #e2e8f0;
+            padding: 1px 8px;
+            border-radius: 16px;
+            color: #334155;
+        }
+        .todo-item .info .desc {
+            font-weight: 500;
+            word-break: break-word;
+            font-size: 13px;
+        }
+        .todo-item .info .due {
+            font-size: 11px;
+            color: #94a3b8;
+            background: #f1f5f9;
+            padding: 1px 8px;
+            border-radius: 14px;
+        }
+        .todo-item .info .pin-icon {
+            font-size: 14px;
+            color: #f59e0b;
+        }
+        .todo-item .info .timer-status {
+            font-size: 11px;
+            color: #22c55e;
+            font-weight: 500;
+        }
+        .todo-item .info .source-tag {
+            font-size: 9px;
+            color: #94a3b8;
+            background: #f1f5f9;
+            padding: 0 6px;
+            border-radius: 10px;
+        }
+        .todo-item .actions {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .todo-item .actions button {
+            padding: 3px 8px;
+            font-size: 12px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: #64748b;
+            transition: background 0.15s, color 0.15s;
+        }
+        .todo-item .actions button:hover {
+            background: #eef2f6;
+            color: #1e293b;
+        }
+        .todo-item .actions button.btn-timer-active {
+            color: #22c55e;
+            background: #dcfce7;
+        }
+        .todo-item .actions button.btn-timer-active:hover {
+            background: #bbf7d0;
+        }
+
+        .btn-primary {
+            background: #6366f1;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #4f46e5;
+        }
+        .btn-success {
+            background: #22c55e;
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #16a34a;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #d1d9e6;
+        }
+        .btn-outline:hover {
+            background: #f1f5f9;
+        }
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+
+        .btn-quick {
+            background: #f59e0b;
+            color: #fff;
+        }
+        .btn-quick:hover {
+            background: #d97706;
+        }
+
+        .empty-state {
+            color: #94a3b8;
+            text-align: center;
+            padding: 20px 0;
+            font-size: 14px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            text-align: left;
+            padding: 6px 6px;
+            background: #f8fafc;
+            font-weight: 600;
+            color: #475569;
+            border-bottom: 2px solid #e2e8f0;
+            white-space: nowrap;
+            font-size: 12px;
+        }
+        td {
+            padding: 5px 6px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            font-size: 13px;
+        }
+        tr:hover td {
+            background: #fafbfc;
+        }
+        .type-badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 1px 8px;
+            border-radius: 16px;
+            background: #e2e8f0;
+            color: #334155;
+            white-space: nowrap;
+        }
+
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .filter-bar input,
+        .filter-bar select {
+            width: auto;
+            flex: 1 1 140px;
+            min-width: 100px;
+            font-size: 12px;
+            padding: 5px 8px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(6px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal {
+            background: #ffffff;
+            border-radius: 20px;
+            max-width: 540px;
+            width: 100%;
+            max-height: 88vh;
+            padding: 28px 32px 24px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
+            animation: modalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+        }
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.94) translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        .modal h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #0f172a;
+        }
+        .modal .sub {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+        .modal .field {
+            margin-bottom: 14px;
+        }
+        .modal .field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #334155;
+        }
+        .modal .field input,
+        .modal .field textarea,
+        .modal .field select {
+            font-size: 15px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1.5px solid #e2e8f0;
+            background: #fafbfc;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            width: 100%;
+            font-family: inherit;
+        }
+        .modal .field input:focus,
+        .modal .field textarea:focus,
+        .modal .field select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            background: #ffffff;
+        }
+        .modal .field textarea {
+            min-height: 70px;
+            resize: vertical;
+        }
+        .modal .field .hint {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        .modal .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 18px;
+            flex-shrink: 0;
+        }
+        .modal .modal-actions button {
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #0f172a;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            z-index: 2000;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1d9e6;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b0bac9;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+        }
+        .calendar-grid .weekday {
+            text-align: center;
+            font-weight: 600;
+            font-size: 12px;
+            color: #64748b;
+            padding: 6px 0;
+        }
+        .calendar-grid .day-cell {
+            border-radius: 8px;
+            padding: 4px 4px;
+            min-height: 56px;
+            cursor: pointer;
+            transition: background 0.15s;
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+        .calendar-grid .day-cell.workday {
+            background: #ffffff;
+            border-color: #eef2f6;
+        }
+        .calendar-grid .day-cell.workday:hover {
+            background: #f8fafc;
+            border-color: #d1d9e6;
+        }
+        .calendar-grid .day-cell.restday {
+            background: #f1f5f9;
+            border-color: #e2e8f0;
+        }
+        .calendar-grid .day-cell.restday:hover {
+            background: #eef2f6;
+            border-color: #d1d9e6;
+        }
+        .calendar-grid .day-cell.empty {
+            background: transparent;
+            cursor: default;
+            border-color: transparent;
+        }
+        .calendar-grid .day-cell.empty:hover {
+            background: transparent;
+            border-color: transparent;
+        }
+        .calendar-grid .day-cell .day-number {
+            font-weight: 500;
+            font-size: 14px;
+            color: #1e293b;
+        }
+        .calendar-grid .day-cell .day-number.today {
+            background: #6366f1;
+            color: #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+        }
+        .calendar-grid .day-cell .day-number.holiday {
+            color: #ef4444;
+        }
+        .calendar-grid .day-cell .day-number.workday-on-rest {
+            color: #0f172a;
+        }
+        .calendar-grid .day-cell .day-stats {
+            font-size: 10px;
+            color: #64748b;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            margin-top: 1px;
+        }
+        .calendar-grid .day-cell .day-stats .stat-record {
+            color: #6366f1;
+        }
+        .calendar-grid .day-cell .day-stats .stat-todo {
+            color: #f59e0b;
+        }
+        .calendar-grid .day-cell .day-stats .stat-holiday {
+            color: #ef4444;
+        }
+        .calendar-grid .day-cell .day-stats .stat-workday-on-rest {
+            color: #22c55e;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .calendar-header .month-label {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .day-detail-list {
+            max-height: 280px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .day-detail-item {
+            padding: 5px 10px;
+            background: #f8fafc;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            border-left: 3px solid #6366f1;
+        }
+        .day-detail-item.todo-item-detail {
+            border-left-color: #f59e0b;
+        }
+        .day-detail-item .detail-type {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 12px;
+            background: #e2e8f0;
+        }
+        .day-detail-item .detail-hours {
+            color: #64748b;
+            font-size: 12px;
+        }
+        .day-detail-item .detail-detail {
+            color: #94a3b8;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+        .day-detail-empty {
+            color: #94a3b8;
+            text-align: center;
+            padding: 16px 0;
+            font-size: 13px;
+        }
+
+        .calendar-grid .day-cell .day-stats .stat-done {
+            color: #22c55e;
+        }
+        @media (max-width: 600px) {
+            .calendar-grid .day-cell {
+                min-height: 40px;
+                padding: 2px 2px;
+            }
+            .calendar-grid .day-cell .day-number {
+                font-size: 12px;
+            }
+            .calendar-grid .day-cell .day-stats {
+                font-size: 9px;
+            }
+            .calendar-grid .day-cell .day-number.today {
+                width: 20px;
+                height: 20px;
+                font-size: 11px;
+            }
+        }
+
+        input[list]::-webkit-calendar-picker-indicator {
+            opacity: 0.5;
+        }
+
+        .done-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 340px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .done-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border-left: 3px solid #22c55e;
+            font-size: 13px;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .done-item .done-info {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+        }
+        .done-item .done-info .done-type {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 1px 8px;
+            border-radius: 12px;
+            background: #e2e8f0;
+        }
+        .done-item .done-info .done-time {
+            font-size: 11px;
+            color: #94a3b8;
+            white-space: nowrap;
+        }
+        .done-item .done-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .done-item .done-actions button {
+            padding: 2px 8px;
+            font-size: 11px;
+            background: transparent;
+            border: none;
+            border-radius: 4px;
+            color: #64748b;
+            cursor: pointer;
+        }
+        .done-item .done-actions button:hover {
+            background: #eef2f6;
+        }
+        .done-item .done-actions button.done-delete:hover {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+
+        .special-date-list {
+            max-height: 260px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .special-date-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 8px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .special-date-item .date-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .special-date-item .date-info .date-tag {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 1px 8px;
+            border-radius: 12px;
+        }
+        .special-date-item .date-info .date-tag.holiday-tag {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+        .special-date-item .date-info .date-tag.workday-tag {
+            background: #dcfce7;
+            color: #22c55e;
+        }
+        .special-date-item .date-info .date-text {
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .special-date-item button {
+            padding: 2px 8px;
+            font-size: 11px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .special-date-item button:hover {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+        .special-date-add-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .special-date-add-row input {
+            flex: 1;
+            min-width: 120px;
+            padding: 6px 10px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: monospace;
+        }
+        .special-date-add-row input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .special-date-add-row select {
+            padding: 6px 10px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+        }
+        .special-date-add-row select:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+        .special-date-add-row button {
+            padding: 6px 16px;
+            background: #6366f1;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .special-date-add-row button:hover {
+            background: #4f46e5;
+        }
+
+        .cycle-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 20px;
+            background: #f8fafc;
+            padding: 16px 18px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 600px) {
+            .cycle-form-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+        .cycle-form-grid .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .cycle-form-grid .field label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #475569;
+        }
+        .cycle-form-grid .field input,
+        .cycle-form-grid .field select {
+            padding: 6px 10px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+            width: 100%;
+        }
+        .cycle-form-grid .field input:focus,
+        .cycle-form-grid .field select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .cycle-form-grid .field .hint-text {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+        .cycle-form-grid .field-full {
+            grid-column: 1 / -1;
+        }
+        .cycle-form-grid .field-full .btn-primary {
+            width: 100%;
+            padding: 8px;
+        }
+
+        .cycle-list-section {
+            margin-top: 4px;
+        }
+        .cycle-list-section .section-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+        .cycle-list-wrap {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eef2f6;
+            border-radius: 10px;
+            padding: 4px 6px;
+        }
+
+        .cycle-group-title {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 6px 3px 6px;
+            margin-top: 4px;
+            border-bottom: 1px dashed #e2e8f0;
+            color: #6366f1;
+        }
+        .cycle-group-title:first-of-type {
+            margin-top: 0;
+        }
+
+        .cycle-item {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            gap: 4px;
+            font-size: 13px;
+        }
+        .cycle-item:last-child {
+            border-bottom: none;
+        }
+        .cycle-item .info {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 120px;
+        }
+        .cycle-item .info .tag {
+            font-size: 10px;
+            background: #eef2f6;
+            padding: 1px 8px;
+            border-radius: 12px;
+            color: #475569;
+        }
+        .cycle-item .info .status-tag {
+            font-size: 11px;
+        }
+        .cycle-item .actions {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .cycle-item .actions button {
+            padding: 2px 8px;
+            font-size: 12px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: #64748b;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .cycle-item .actions button:hover {
+            background: #eef2f6;
+            color: #1e293b;
+        }
+        .cycle-item .actions button.delete-btn:hover {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+
+        .cycle-action-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 12px;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-layout">
+
+        <div class="sidebar">
+            <div class="logo">📋 <span>工作记录</span></div>
+
+            <button class="active" data-page="todo" onclick="switchPage('todo')">
+                📌 待办 <span class="nav-badge" id="sidebarTodoCount">0</span>
+            </button>
+            <button data-page="history" onclick="switchPage('history')">
+                📜 历史 <span class="nav-badge" id="sidebarHistoryCount">0</span>
+            </button>
+            <button data-page="calendar" onclick="switchPage('calendar')">
+                📅 日历
+            </button>
+            <button data-page="cycles" onclick="switchPage('cycles')">
+                🔄 周期任务
+            </button>
+            <!-- ★★★ 新增：统计页面 ★★★ -->
+            <button data-page="stats" onclick="switchPage('stats')">
+                📊 统计
+            </button>
+
+            <div class="sidebar-export">
+                <button onclick="exportJSON()">📥 <span>导出 JSON</span></button>
+                <button onclick="exportCSV()">📥 <span>导出 CSV</span></button>
+                <button onclick="document.getElementById('importFile').click()">📤 <span>导入 JSON</span></button>
+                <div id="cloudStatus" style="font-size:0.75rem;color:#2d8a4e;margin:4px 0;"></div>
+                <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+            </div>
+        </div>
+
+        <div class="main-content">
+
+            <!-- ===== 页面：待办 ===== -->
+            <div id="page-todo" class="page active">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📌 重要事项提醒</h2>
+                        <span class="badge">自动保存</span>
+                    </div>
+                    <div contenteditable="true" class="notes-editor" id="notesEditor" spellcheck="true"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>⏳ 今天要做的事 <span class="badge" id="todoCount">0</span></h2>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <button class="btn-quick btn-sm" onclick="openQuickRecord()" title="快速记录已完成的一次性事务">⚡ 快速记录</button>
+                            <button class="btn-outline btn-sm" onclick="openDoneList()">✅ 已完成</button>
+                            <button class="btn-primary btn-sm" onclick="openAddTodo()">➕ 添加待办</button>
+                        </div>
+                    </div>
+                    <div id="todoContainer">
+                        <div class="empty-state">✨ 今天没有待办，轻松一下！</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== 页面：历史 ===== -->
+            <div id="page-history" class="page">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📊 工时统计</h2>
+                        <span class="badge">近三日</span>
+                    </div>
+                    <div class="stats-row" id="statsContainer">
+                        <div class="stat-item"><div class="label">今天</div><div class="value" id="statToday">0<span class="unit">h</span></div></div>
+                        <div class="stat-item"><div class="label">昨天</div><div class="value" id="statYesterday">0<span class="unit">h</span></div></div>
+                        <div class="stat-item"><div class="label">前天</div><div class="value" id="statDayBefore">0<span class="unit">h</span></div></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📜 历史记录 <span class="badge" id="recordCount">0</span></h2>
+                        <button class="btn-outline btn-sm" onclick="clearAllRecords()" style="color:#ef4444;">🗑️ 清空记录</button>
+                    </div>
+
+                    <div class="filter-bar">
+                        <input type="date" id="filterDateStart" placeholder="开始日期">
+                        <input type="date" id="filterDateEnd" placeholder="结束日期">
+                        <select id="filterType">
+                            <option value="">全部类型</option>
+                        </select>
+                        <input type="text" id="filterSearch" placeholder="🔍 搜索事件/细节..." style="flex:2; min-width:120px;">
+                        <button class="btn-outline btn-sm" onclick="applyFilters()">筛选</button>
+                        <button class="btn-outline btn-sm" onclick="resetFilters()">重置</button>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>类型</th>
+                                    <th>事件</th>
+                                    <th>细节</th>
+                                    <th style="min-width:70px;">耗时 (h)</th>
+                                    <th style="min-width:70px;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recordsBody">
+                                <tr><td colspan="6" class="empty-state" style="padding:20px 0;">暂无记录</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== 页面：日历 ===== -->
+            <div id="page-calendar" class="page">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📅 日历视图</h2>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <button class="btn-outline btn-sm" onclick="changeMonth(-1)">◀ 上月</button>
+                            <button class="btn-outline btn-sm" onclick="changeMonth(1)">下月 ▶</button>
+                            <button class="btn-outline btn-sm" onclick="goToday()">今天</button>
+                            <button class="btn-outline btn-sm" onclick="openSpecialDateManager()">📅 特殊日期</button>
+                        </div>
+                    </div>
+                    <div class="calendar-header">
+                        <span class="month-label" id="calendarMonthLabel">2026年8月</span>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                </div>
+            </div>
+
+            <!-- ===== 页面：周期任务 ===== -->
+            <div id="page-cycles" class="page">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🔄 周期任务管理</h2>
+                        <span class="badge">自动生成待办</span>
+                    </div>
+
+                    <div class="cycle-form-grid">
+                        <div class="field">
+                            <label>事件 *</label>
+                            <input id="cycleEvent" placeholder="例如：37号文申报截止">
+                        </div>
+                        <div class="field">
+                            <label>类型</label>
+                            <input list="typeDatalist" id="cycleType" placeholder="输入或选择">
+                            <datalist id="typeDatalist"></datalist>
+                        </div>
+                        <div class="field">
+                            <label>循环方式</label>
+                            <select id="cycleMode" onchange="toggleCycleMode()">
+                                <option value="days">按天数循环</option>
+                                <option value="monthlyDay">每月固定日期</option>
+                                <option value="monthlyWorkday">每月第 N 个工作日</option>
+                            </select>
+                        </div>
+                        <div class="field" id="cycleDaysGroup">
+                            <label>首次日期 / 间隔天数</label>
+                            <div style="display:flex; gap:6px;">
+                                <input type="date" id="cycleFirstDate" style="flex:1;">
+                                <input type="number" id="cycleInterval" value="365" min="1" style="flex:1;" placeholder="天数">
+                            </div>
+                        </div>
+                        <div class="field hidden" id="cycleMonthlyGroup">
+                            <label>每月几号 (1-28)</label>
+                            <input type="number" id="cycleMonthlyDay" value="1" min="1" max="28">
+                            <div class="hint-text">如果该月没有此日期，将顺延到下个月1号</div>
+                        </div>
+                        <div class="field hidden" id="cycleWorkdayGroup">
+                            <label>第几个工作日 (1-22)</label>
+                            <input type="number" id="cycleWorkdayN" value="1" min="1" max="22">
+                            <div class="hint-text">自动跳过已维护的节假日</div>
+                        </div>
+                        <div class="field field-full">
+                            <button class="btn-primary" onclick="addCycle()">➕ 添加周期任务</button>
+                        </div>
+                    </div>
+
+                    <div class="cycle-list-section">
+                        <div class="section-label">已有周期任务</div>
+                        <div class="cycle-list-wrap" id="cycleListContainer">
+                            <div class="empty-state" style="padding:16px 0;">暂无周期任务</div>
+                        </div>
+                        <div class="cycle-action-row">
+                            <button class="btn-outline btn-sm" onclick="manualGenerateCycles()" title="紧急情况下手动生成">🔄 立即生成待办</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== ★★★ 页面：统计 ★★★ ===== -->
+            <div id="page-stats" class="page">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📊 工时统计</h2>
+                        <span class="badge" id="statsRecordCount">0 条记录</span>
+                    </div>
+
+                    <!-- 筛选器 -->
+                    <div class="stats-filter">
+                        <div class="btn-group" id="statsPeriodGroup">
+                            <button class="active" data-period="week" onclick="setStatsPeriod('week')">本周</button>
+                            <button data-period="month" onclick="setStatsPeriod('month')">本月</button>
+                            <button data-period="custom" onclick="setStatsPeriod('custom')">自定义</button>
+                        </div>
+                        <div class="date-inputs" id="statsDateInputs">
+                            <input type="date" id="statsDateStart">
+                            <span class="sep">—</span>
+                            <input type="date" id="statsDateEnd">
+                            <button class="btn-primary btn-sm" onclick="updateStats()">更新</button>
+                        </div>
+                    </div>
+
+                    <!-- 总览卡片 -->
+                    <div class="stats-cards" id="statsCards">
+                        <div class="stat-card">
+                            <div class="stat-label">总工时</div>
+                            <div class="stat-value" id="statsTotal">0<span class="unit">h</span></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">日均工时</div>
+                            <div class="stat-value" id="statsDaily">0<span class="unit">h</span></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">最耗时类型</div>
+                            <div class="stat-value" id="statsTopType">-</div>
+                            <div class="stat-sub" id="statsTopTypeHours"></div>
+                        </div>
+                    </div>
+
+                    <!-- 图表 -->
+                    <div class="charts-grid">
+                        <div class="chart-box">
+                            <div class="chart-title">🔵 类型分布（按累计工时）</div>
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <div class="chart-title">📈 每日趋势</div>
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div id="statsEmpty" class="stats-empty hidden">📭 选定时间段内暂无记录</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="modalContainer"></div>
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // ============================================================
+        //  数据层
+        // ============================================================
+        const STORAGE_KEY = 'workTrackerData';
+        const CACHE_KEY = 'workTrackerData_cloud_cache';
+        const CLOUD_API_URL = '/api/data';
+        const CLOUD_ENABLED = true;
+
+        function setStatus(text) {
+          const el = document.getElementById('cloudStatus');
+          if (el) el.textContent = text;
+        }
+
+        function getDefaultData() {
+            return {
+                records: [],
+                todos: [],
+                doneTodos: [],
+                cycles: [],
+                types: ['cgl', 'wjx', '三启', '证照', '其他'],
+                specialDates: [],
+                notes: '',
+                nextId: 1,
+                timers: {}
+            };
+        }
+
+        let data = {};
+
+        function loadLocalData() {
+            try {
+                const raw = localStorage.getItem(CACHE_KEY) || localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (!parsed.records) parsed.records = [];
+                    if (!parsed.todos) parsed.todos = [];
+                    if (!parsed.doneTodos) parsed.doneTodos = [];
+                    if (!parsed.cycles) parsed.cycles = [];
+                    if (!parsed.types) parsed.types = ['cgl', 'wjx', '三启', '证照', '其他'];
+                    if (!parsed.specialDates) parsed.specialDates = [];
+                    if (parsed.notes === undefined) parsed.notes = '';
+                    if (!parsed.nextId) parsed.nextId = 1;
+                    if (!parsed.timers) parsed.timers = {};
+                    parsed.cycles.forEach(c => {
+                        if (!c.cycleType) c.cycleType = 'days';
+                        if (c.cycleType === 'days' && !c.intervalDays) c.intervalDays = 365;
+                        if (c.cycleType === 'monthlyDay' && !c.monthlyDay) c.monthlyDay = 1;
+                        if (c.cycleType === 'monthlyWorkday' && !c.monthlyWorkdayN) c.monthlyWorkdayN = 1;
+                    });
+                    parsed.records.forEach(r => { if (!r.id) r.id = 'r' + Date.now() + '_' + Math.random().toString(36)
+                            .slice(2, 6); });
+                    parsed.todos.forEach(t => { if (!t.source) t.source = 'manual'; });
+                    return parsed;
+                }
+            } catch (e) { console.warn('加载数据失败', e); }
+            return getDefaultData();
+        }
+
+        async function saveData() {
+            try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch (e) {}
+            renderAll();
+            refreshTypeOptions();
+            saveNotes();
+            updateSidebarBadges();
+            if (currentPage === 'stats') {
+                updateStats();
+            }
+            if (!CLOUD_ENABLED) { setStatus(''); return; }
+            let token = sessionStorage.getItem('work_write_token');
+            if (!token) {
+                token = prompt('请输入编辑密码（用于同步到云端）：');
+                if (token) sessionStorage.setItem('work_write_token', token);
+            }
+            if (!token) { setStatus('💾 本地已保存'); return; }
+            try {
+                await pushCloudData(token);
+                setStatus('☁️ 已同步');
+            } catch (e) {
+                if (e.code === 401) {
+                    sessionStorage.removeItem('work_write_token');
+                    setStatus('❌ 密码错误');
+                } else {
+                    setStatus('📴 网络异常');
+                }
+            }
+        }
+
+        async function pushCloudData(token) {
+            if (!CLOUD_ENABLED) return { skipped: true };
+            const res = await fetch(CLOUD_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Write-Token': token },
+                body: JSON.stringify(data)
+            });
+            if (res.status === 401) { const e = new Error('密码错误'); e.code = 401; throw e; }
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            renderAll();
+            refreshTypeOptions();
+            saveNotes();
+            updateSidebarBadges();
+            // 如果当前在统计页，刷新统计
+            if (currentPage === 'stats') {
+                updateStats();
+            }
+        }
+
+        function genId() {
+            return data.nextId++;
+        }
+
+        // ============================================================
+        //  工具函数
+        // ============================================================
+        function todayStr() {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            return dateStr;
+        }
+
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            return d.toLocaleString('zh-CN', { hour12: false });
+        }
+
+        function getDateOffset(dateStr, days) {
+            const parts = dateStr.split('-').map(Number);
+            const d = new Date(parts[0], parts[1] - 1, parts[2]);
+            d.setDate(d.getDate() + days);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        function getTypeColor(type) {
+            const colors = {
+                'cgl': '#6366f1',
+                'wjx': '#8b5cf6',
+                '三启': '#06b6d4',
+                '证照': '#f59e0b',
+                '其他': '#64748b'
+            };
+            return colors[type] || '#64748b';
+        }
+
+        function getTypeLabel(type) { return type || '其他'; }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getTypeOptions() {
+            return data.types || ['cgl', 'wjx', '三启', '证照', '其他'];
+        }
+
+        function refreshTypeOptions() {
+            const types = getTypeOptions();
+            const dlist = document.getElementById('typeDatalist');
+            if (dlist) {
+                dlist.innerHTML = '';
+                types.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t;
+                    dlist.appendChild(opt);
+                });
+            }
+        }
+
+        function updateSidebarBadges() {
+            document.getElementById('sidebarTodoCount').textContent = data.todos.length;
+            document.getElementById('sidebarHistoryCount').textContent = data.records.length;
+        }
+
+        // ============================================================
+        //  特殊日期
+        // ============================================================
+        function isSpecialDate(dateStr) {
+            return data.specialDates.find(d => d.date === dateStr) || null;
+        }
+
+        function isHoliday(dateStr) {
+            const special = isSpecialDate(dateStr);
+            if (special) return special.type === 'holiday';
+            const d = new Date(dateStr + 'T00:00:00');
+            const day = d.getDay();
+            return day === 0 || day === 6;
+        }
+
+        function isWorkday(dateStr) {
+            const special = isSpecialDate(dateStr);
+            if (special) return special.type === 'workday';
+            const d = new Date(dateStr + 'T00:00:00');
+            const day = d.getDay();
+            return day !== 0 && day !== 6;
+        }
+
+        function getDayType(dateStr) {
+            const special = isSpecialDate(dateStr);
+            if (special) return special.type;
+            const d = new Date(dateStr + 'T00:00:00');
+            const day = d.getDay();
+            if (day === 0 || day === 6) return 'holiday';
+            return 'workday';
+        }
+
+        function getNthWorkday(year, month, n) {
+            let count = 0;
+            for (let day = 1; day <= 31; day++) {
+                const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const d = new Date(dateStr + 'T00:00:00');
+                if (d.getMonth() + 1 !== month) break;
+                if (isWorkday(dateStr)) {
+                    count++;
+                    if (count === n) return dateStr;
+                }
+            }
+            return null;
+        }
+
+        function addSpecialDateFromCalendar(dateStr, type) {
+            if (data.specialDates.find(d => d.date === dateStr)) {
+                showToast('该日期已存在特殊标记，请先移除再重新添加');
+                return;
+            }
+            data.specialDates.push({ date: dateStr, type: type });
+            saveData();
+            closeModal();
+            renderCalendar();
+            showToast(`✅ 已设置 ${dateStr} 为 ${type === 'holiday' ? '节假日' : '调休工作日'}`);
+        }
+
+        function removeSpecialDateFromCalendar(dateStr) {
+            data.specialDates = data.specialDates.filter(d => d.date !== dateStr);
+            saveData();
+            closeModal();
+            renderCalendar();
+            showToast('已移除特殊标记');
+        }
+
+        // ============================================================
+        //  周期任务引擎
+        // ============================================================
+        function getNextCycleDate(cycle) {
+            const today = todayStr();
+            if (cycle.cycleType === 'days') {
+                let due = cycle.firstDate;
+                while (due < today) {
+                    due = getDateOffset(due, cycle.intervalDays);
+                }
+                return due;
+            }
+            if (cycle.cycleType === 'monthlyDay') {
+                const day = cycle.monthlyDay || 1;
+                let year = parseInt(today.slice(0, 4));
+                let month = parseInt(today.slice(5, 7));
+                let due = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                if (due < today) {
+                    month++;
+                    if (month > 12) { month = 1;
+                        year++; }
+                    due = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                }
+                let d = new Date(due + 'T00:00:00');
+                if (d.getMonth() + 1 !== month) {
+                    month++;
+                    if (month > 12) { month = 1;
+                        year++; }
+                    due = `${year}-${String(month).padStart(2, '0')}-01`;
+                }
+                return due;
+            }
+            if (cycle.cycleType === 'monthlyWorkday') {
+                const n = cycle.monthlyWorkdayN || 1;
+                let year = parseInt(today.slice(0, 4));
+                let month = parseInt(today.slice(5, 7));
+                let due = getNthWorkday(year, month, n);
+                if (!due || due < today) {
+                    month++;
+                    if (month > 12) { month = 1;
+                        year++; }
+                    due = getNthWorkday(year, month, n);
+                    if (!due) {
+                        month++;
+                        if (month > 12) { month = 1;
+                            year++; }
+                        due = getNthWorkday(year, month, n);
+                    }
+                }
+                return due;
+            }
+            return null;
+        }
+
+        function generateTodosFromCycles(auto = true) {
+            const today = todayStr();
+            const horizon = getDateOffset(today, 90);
+
+            data.cycles.forEach(cycle => {
+                if (!cycle.active) return;
+
+                let due = getNextCycleDate(cycle);
+                if (!due) return;
+                if (due > horizon) return;
+
+                while (due <= horizon) {
+                    const existingTodo = data.todos.find(t =>
+                        t.event === cycle.event &&
+                        t.type === cycle.type &&
+                        t.dueDate === due &&
+                        t.source === 'cycle'
+                    );
+
+                    const existingDone = data.doneTodos.find(d =>
+                        d.event === cycle.event &&
+                        d.type === cycle.type &&
+                        d.dueDate === due &&
+                        d.source === 'cycle'
+                    );
+
+                    if (!existingTodo && !existingDone) {
+                        data.todos.push({
+                            id: genId(),
+                            type: cycle.type,
+                            event: cycle.event,
+                            dueDate: due,
+                            createdAt: today,
+                            pinned: false,
+                            source: 'cycle'
+                        });
+                    }
+
+                    if (cycle.cycleType === 'days') {
+                        due = getDateOffset(due, cycle.intervalDays);
+                    } else if (cycle.cycleType === 'monthlyDay') {
+                        const parts = due.split('-').map(Number);
+                        let month = parts[1] + 1;
+                        let year = parts[0];
+                        if (month > 12) { month = 1;
+                            year++; }
+                        const day = cycle.monthlyDay || 1;
+                        due = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        let d = new Date(due + 'T00:00:00');
+                        if (d.getMonth() + 1 !== month) {
+                            month++;
+                            if (month > 12) { month = 1;
+                                year++; }
+                            due = `${year}-${String(month).padStart(2, '0')}-01`;
+                        }
+                    } else if (cycle.cycleType === 'monthlyWorkday') {
+                        const parts = due.split('-').map(Number);
+                        let month = parts[1] + 1;
+                        let year = parts[0];
+                        if (month > 12) { month = 1;
+                            year++; }
+                        const n = cycle.monthlyWorkdayN || 1;
+                        const nextDue = getNthWorkday(year, month, n);
+                        due = nextDue || `${year}-${String(month).padStart(2, '0')}-01`;
+                    }
+                }
+            });
+
+            const seen = new Set();
+            data.todos = data.todos.filter(t => {
+                const key = t.id + '|' + t.source;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+
+            saveData();
+            if (!auto) {
+                showToast('🔄 已重新生成待办');
+            }
+        }
+
+        function manualGenerateCycles() {
+            generateTodosFromCycles(false);
+            renderTodos();
+        }
+
+        // ============================================================
+        //  计时器
+        // ============================================================
+        function getTimer(todoId) {
+            return data.timers[todoId] || null;
+        }
+
+        function startTimer(todoId) {
+            data.timers[todoId] = Date.now();
+            saveData();
+            renderTodos();
+            showToast('⏱️ 计时已开始');
+        }
+
+        function stopTimer(todoId) {
+            const start = data.timers[todoId];
+            if (!start) {
+                showToast('计时器未启动');
+                return;
+            }
+            const elapsedMs = Date.now() - start;
+            const elapsedHours = elapsedMs / (1000 * 60 * 60);
+            const hours = Math.max(0.05, Math.round(elapsedHours * 20) / 20);
+
+            delete data.timers[todoId];
+            saveData();
+
+            const todo = data.todos.find(t => t.id === todoId);
+            if (!todo) { showToast('待办不存在'); return; }
+
+            showModal(`
+                <h3>⏱️ 记录工时</h3>
+                <div class="sub">为「${escapeHtml(todo.event)}」记录工作时间（计时 ${hours.toFixed(2)} 小时）</div>
+                <div class="field">
+                    <label>日期 *</label>
+                    <input type="date" id="modalRecordDate" value="${todayStr()}">
+                    <div class="hint">可修改为过去的日期进行补录</div>
+                </div>
+                <div class="field">
+                    <label>今天花费 (小时) *</label>
+                    <input type="number" id="modalHours" step="0.01" min="0.01" value="${hours.toFixed(2)}" placeholder="例如 1.50">
+                    <div class="hint">可填小数，如 0.50 表示半小时</div>
+                </div>
+                <div class="field">
+                    <label>细节（可选）</label>
+                    <input id="modalDetail" placeholder="例如：处理了某某客户的邮件">
+                    <div class="hint">补充说明，可在历史记录中搜索</div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-outline" onclick="closeModal()">取消</button>
+                    <button class="btn-primary" onclick="confirmLogTimeFromTimer(${todoId})">保存工时</button>
+                </div>
+            `);
+            setTimeout(() => {
+                const el = document.getElementById('modalHours');
+                if (el) el.focus();
+            }, 100);
+        }
+
+        function confirmLogTimeFromTimer(todoId) {
+            const recordDate = document.getElementById('modalRecordDate').value;
+            if (!recordDate) { showToast('请选择日期'); return; }
+            const hours = parseFloat(document.getElementById('modalHours').value);
+            if (isNaN(hours) || hours <= 0) { showToast('请输入有效的小时数（大于0）'); return; }
+            const todo = data.todos.find(t => t.id === todoId);
+            if (!todo) { showToast('待办不存在'); return; }
+            const detail = document.getElementById('modalDetail').value.trim() || '';
+
+            data.records.push({
+                id: 'r' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                date: recordDate,
+                type: todo.type,
+                event: todo.event,
+                hours: Math.round(hours * 100) / 100,
+                detail: detail
+            });
+
+            saveData();
+            closeModal();
+            showToast(`⏱️ 已记录 ${Math.round(hours * 100) / 100} 小时${detail ? '（' + detail + '）' : ''}`);
+        }
+
+        // ============================================================
+        //  页面切换
+        // ============================================================
+        let currentPage = 'todo';
+
+        function switchPage(page) {
+            currentPage = page;
+            document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+            const target = document.getElementById('page-' + page);
+            if (target) target.classList.add('active');
+            document.querySelectorAll('.sidebar button').forEach(el => {
+                el.classList.toggle('active', el.dataset.page === page);
+            });
+            if (page === 'calendar') renderCalendar();
+            if (page === 'history') { renderStats();
+                renderRecords(); }
+            if (page === 'todo') renderTodos();
+            if (page === 'cycles') renderCycles();
+            if (page === 'stats') {
+                // 初始化统计页面
+                initStatsPage();
+            }
+        }
+
+        // ============================================================
+        //  渲染：待办
+        // ============================================================
+        function renderTodos() {
+            const today = todayStr();
+            const tenDaysLater = getDateOffset(today, 9);
+
+            const pinned = data.todos.filter(t => t.pinned === true);
+            const unpinned = data.todos.filter(t => !t.pinned);
+            const near = [];
+            const future = [];
+            unpinned.forEach(t => {
+                if (!t.dueDate) { near.push(t); return; }
+                if (t.dueDate <= tenDaysLater) near.push(t);
+                else future.push(t);
+            });
+
+            const sortFn = (a, b) => {
+                if (!a.dueDate) return -1;
+                if (!b.dueDate) return 1;
+                return a.dueDate.localeCompare(b.dueDate);
+            };
+            pinned.sort((a, b) => {
+                if (!a.dueDate) return -1;
+                if (!b.dueDate) return 1;
+                return a.dueDate.localeCompare(b.dueDate);
+            });
+            near.sort(sortFn);
+            future.sort(sortFn);
+
+            const container = document.getElementById('todoContainer');
+            const countEl = document.getElementById('todoCount');
+            const total = pinned.length + near.length + future.length;
+            countEl.textContent = total;
+
+            if (total === 0) {
+                container.innerHTML = `<div class="empty-state">✅ 今天没有待办，轻松一下！</div>`;
+                return;
+            }
+
+            let html = '';
+            if (pinned.length > 0) {
+                html += `<div class="todo-section">`;
+                html +=
+                    `<div class="section-title" style="color:#f59e0b;">📌 置顶 (${pinned.length}项) <span style="font-weight:400;font-size:11px;color:#94a3b8;">点击收起/展开</span></div>`;
+                html += `<div class="todo-list" id="todoPinnedList">`;
+                pinned.forEach(todo => { html += renderTodoItem(todo); });
+                html += `</div></div>`;
+            }
+            if (near.length > 0) {
+                html += `<div class="todo-section">`;
+                html +=
+                    `<div class="section-title" onclick="toggleTodoSection(this)">📌 近期 (${near.length}项) <span style="font-weight:400;font-size:11px;color:#94a3b8;">点击收起/展开</span></div>`;
+                html += `<div class="todo-list" id="todoNearList">`;
+                near.forEach(todo => { html += renderTodoItem(todo); });
+                html += `</div></div>`;
+            }
+            if (future.length > 0) {
+                html += `<div class="todo-section">`;
+                html +=
+                    `<div class="section-title" onclick="toggleTodoSection(this)">📁 未来待办 (${future.length}项) <span style="font-weight:400;font-size:11px;color:#94a3b8;">点击展开/收起</span></div>`;
+                html += `<div class="todo-list collapsed" id="todoFutureList">`;
+                future.forEach(todo => { html += renderTodoItem(todo); });
+                html += `</div></div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function renderTodoItem(todo) {
+            const typeLabel = getTypeLabel(todo.type);
+            const color = getTypeColor(todo.type);
+            const dueInfo = todo.dueDate ? `📅 ${formatDate(todo.dueDate)}` : '⏳ 无截止日';
+            const pinnedClass = todo.pinned ? 'pinned' : '';
+            const pinIcon = todo.pinned ? '<span class="pin-icon">📌</span>' : '';
+            const sourceLabel = todo.source === 'cycle' ? '<span class="source-tag">🔄</span>' : '';
+
+            const timer = getTimer(todo.id);
+            const timerActive = timer !== null && timer !== undefined;
+            const timerBtnClass = timerActive ? 'btn-timer-active' : '';
+            const timerLabel = timerActive ? '⏹️' : '▶️';
+            const timerTitle = timerActive ? '停止计时' : '开始计时';
+            const timerAction = timerActive ? `stopTimer(${todo.id})` : `startTimer(${todo.id})`;
+            const timerStatus = timerActive ? '<span class="timer-status">● 计时中</span>' : '';
+
+            return `
+                <div class="todo-item ${pinnedClass}" style="border-left-color:${todo.pinned ? '#f59e0b' : color};">
+                    <div class="info">
+                        <span class="type-tag" style="background:${color}20; color:${color};">${typeLabel}</span>
+                        <span class="desc">${pinIcon} ${escapeHtml(todo.event)}</span>
+                        <span class="due">${dueInfo}</span>
+                        ${sourceLabel}
+                        ${timerStatus}
+                    </div>
+                    <div class="actions">
+                        <button class="${timerBtnClass}" onclick="${timerAction}" title="${timerTitle}">${timerLabel}</button>
+                        <button onclick="togglePin(${todo.id})" title="${todo.pinned ? '取消置顶' : '置顶'}">${todo.pinned ? '📌✓' : '📌'}</button>
+                        <button onclick="openEditTodo(${todo.id})">✏️</button>
+                        <button onclick="openLogTime(${todo.id})">⏱️</button>
+                        <button onclick="completeTodo(${todo.id})">✅</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleTodoSection(el) {
+            const list = el.parentElement.querySelector('.todo-list');
+            if (list) list.classList.toggle('collapsed');
+        }
+
+        // ============================================================
+        //  重要事项
+        // ============================================================
+        function loadNotes() {
+            const el = document.getElementById('notesEditor');
+            if (el) el.innerHTML = data.notes || '';
+        }
+
+        function saveNotes() {
+            const el = document.getElementById('notesEditor');
+            if (el) {
+                data.notes = el.innerHTML;
+                try {
+                    const fullData = JSON.parse(localStorage.getItem(STORAGE_KEY));
+                    if (fullData) {
+                        fullData.notes = data.notes;
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(fullData));
+                    }
+                } catch (e) {}
+            }
+        }
+
+        // ============================================================
+        //  已完成待办
+        // ============================================================
+        function openDoneList() {
+            if (data.doneTodos.length === 0) {
+                showToast('📭 暂无已完成的待办');
+                return;
+            }
+
+            const sorted = [...data.doneTodos].sort((a, b) => {
+                return new Date(b.completedAt) - new Date(a.completedAt);
+            });
+
+            let html = `<div class="done-list">`;
+            sorted.forEach(d => {
+                const color = getTypeColor(d.type);
+                const sourceLabel = d.source === 'cycle' ? '🔄' : '';
+                html += `
+                    <div class="done-item">
+                        <div class="done-info">
+                            <span class="done-type" style="background:${color}20; color:${color};">${getTypeLabel(d.type)}</span>
+                            <span>${escapeHtml(d.event)} ${sourceLabel}</span>
+                            <span class="done-time">✅ ${formatDateTime(d.completedAt)}</span>
+                        </div>
+                        <div class="done-actions">
+                            <button onclick="reopenDone(${d.id})">↩️</button>
+                            <button class="done-delete" onclick="deleteDone(${d.id})">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+
+            showModal(`
+                <h3>✅ 已完成待办</h3>
+                <div class="sub">共 ${data.doneTodos.length} 项（🔄 表示周期任务）</div>
+                ${html}
+                <div class="modal-actions" style="justify-content:space-between;">
+                    <button class="btn-outline btn-sm" onclick="clearAllDone()" style="color:#ef4444;border-color:#ef4444;">🗑️ 清空全部</button>
+                    <button class="btn-outline" onclick="closeModal()">关闭</button>
+                </div>
+            `);
+        }
+
+        function reopenDone(id) {
+            const idx = data.doneTodos.findIndex(d => d.id === id);
+            if (idx === -1) { showToast('记录不存在'); return; }
+            const item = data.doneTodos.splice(idx, 1)[0];
+            data.todos.push({
+                id: item.id,
+                type: item.type,
+                event: item.event,
+                dueDate: item.dueDate || '',
+                createdAt: todayStr(),
+                pinned: false,
+                source: item.source || 'manual'
+            });
+            saveData();
+            closeModal();
+            showToast('↩️ 已移回待办列表');
+            openDoneList();
+        }
+
+        function deleteDone(id) {
+            if (!confirm('确认永久删除此记录？')) return;
+            data.doneTodos = data.doneTodos.filter(d => d.id !== id);
+            saveData();
+            closeModal();
+            showToast('已删除');
+            if (data.doneTodos.length > 0) openDoneList();
+        }
+
+        function clearAllDone() {
+            if (!confirm('确认清空所有已完成待办？')) return;
+            data.doneTodos = [];
+            saveData();
+            closeModal();
+            showToast('已清空');
+        }
+
+        // ============================================================
+        //  快速记录
+        // ============================================================
+        function openQuickRecord() {
+            const types = getTypeOptions();
+            showModal(`
+                <h3>⚡ 快速记录</h3>
+                <div class="sub">记录一件已经完成的一次性事务，不会生成待办</div>
+                <div class="field">
+                    <label>日期 *</label>
+                    <input type="date" id="quickRecordDate" value="${todayStr()}">
+                    <div class="hint">可修改为过去的日期进行补录</div>
+                </div>
+                <div class="field">
+                    <label>类型</label>
+                    <input list="typeDatalist" id="quickRecordType" placeholder="输入或选择类型" value="其他">
+                    <datalist id="typeDatalist">${types.map(t => `<option value="${t}">`).join('')}</datalist>
+                    <div class="hint">输入新类型后自动保存</div>
+                </div>
+                <div class="field">
+                    <label>事件描述 *</label>
+                    <input id="quickRecordEvent" placeholder="例如：回复了客户邮件">
+                </div>
+                <div class="field">
+                    <label>耗时 (小时) *</label>
+                    <input type="number" id="quickRecordHours" step="0.01" min="0.01" placeholder="例如 0.50">
+                    <div class="hint">可填小数，如 0.50 表示半小时</div>
+                </div>
+                <div class="field">
+                    <label>细节（可选）</label>
+                    <input id="quickRecordDetail" placeholder="例如：处理了某某客户的问题">
+                    <div class="hint">补充说明，可在历史记录中搜索</div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-outline" onclick="closeModal()">取消</button>
+                    <button class="btn-quick" onclick="confirmQuickRecord()">⚡ 保存记录</button>
+                </div>
+            `);
+            refreshTypeOptions();
+            setTimeout(() => {
+                const el = document.getElementById('quickRecordEvent');
+                if (el) el.focus();
+            }, 100);
+        }
+
+        function confirmQuickRecord() {
+            const date = document.getElementById('quickRecordDate').value;
+            if (!date) { showToast('请选择日期'); return; }
+
+            let type = document.getElementById('quickRecordType').value.trim();
+            if (!type) type = '其他';
+            if (!data.types.includes(type)) data.types.push(type);
+
+            const event = document.getElementById('quickRecordEvent').value.trim();
+            if (!event) { showToast('请输入事件描述'); return; }
+
+            const hours = parseFloat(document.getElementById('quickRecordHours').value);
+            if (isNaN(hours) || hours <= 0) { showToast('请输入有效的小时数（大于0）'); return; }
+
+            const detail = document.getElementById('quickRecordDetail').value.trim() || '';
+
+            data.records.push({
+                id: 'r' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                date: date,
+                type: type,
+                event: event,
+                hours: Math.round(hours * 100) / 100,
+                detail: detail
+            });
+
+            saveData();
+            closeModal();
+            showToast(`⚡ 已记录「${event}」${Math.round(hours * 100) / 100} 小时${detail ? '（' + detail + '）' : ''}`);
+        }
+
+        // ============================================================
+        //  渲染：历史
+        // ============================================================
+        function renderStats() {
+            const today = todayStr();
+            const yesterday = getDateOffset(today, -1);
+            const dayBefore = getDateOffset(today, -2);
+
+            function sumHours(dateStr) {
+                return data.records
+                    .filter(r => r.date === dateStr)
+                    .reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0);
+            }
+
+            document.getElementById('statToday').innerHTML = sumHours(today).toFixed(2) + '<span class="unit">h</span>';
+            document.getElementById('statYesterday').innerHTML = sumHours(yesterday).toFixed(2) + '<span class="unit">h</span>';
+            document.getElementById('statDayBefore').innerHTML = sumHours(dayBefore).toFixed(2) + '<span class="unit">h</span>';
+        }
+
+        function renderRecords() {
+            const records = getFilteredRecords();
+            const tbody = document.getElementById('recordsBody');
+            const countEl = document.getElementById('recordCount');
+            countEl.textContent = data.records.length;
+
+            if (records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-state" style="padding:20px 0;">暂无匹配的记录</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            records.forEach(r => {
+                const color = getTypeColor(r.type);
+                const rid = r.id || 'r' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+                if (!r.id) r.id = rid;
+                html += `
+                    <tr>
+                        <td>${formatDate(r.date)}</td>
+                        <td><span class="type-badge" style="background:${color}20; color:${color};">${getTypeLabel(r.type)}</span></td>
+                        <td>${escapeHtml(r.event)}</td>
+                        <td>${escapeHtml(r.detail || '')}</td>
+                        <td>${(parseFloat(r.hours) || 0).toFixed(2)}</td>
+                        <td>
+                            <button style="background:transparent;border:none;color:#64748b;padding:3px 6px;border-radius:4px;cursor:pointer;" onclick="openEditRecord('${rid}')">✏️</button>
+                            <button style="background:transparent;border:none;color:#64748b;padding:3px 6px;border-radius:4px;cursor:pointer;" onclick="deleteRecord('${rid}')">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function getFilteredRecords() {
+            const start = document.getElementById('filterDateStart').value;
+            const end = document.getElementById('filterDateEnd').value;
+            const type = document.getElementById('filterType').value;
+            const search = document.getElementById('filterSearch').value.toLowerCase().trim();
+
+            return data.records.filter(r => {
+                if (start && r.date < start) return false;
+                if (end && r.date > end) return false;
+                if (type && r.type !== type) return false;
+                if (search) {
+                    const inEvent = r.event.toLowerCase().includes(search);
+                    const inDetail = (r.detail || '').toLowerCase().includes(search);
+                    if (!inEvent && !inDetail) return false;
+                }
+                return true;
+            });
+        }
+
+        function applyFilters() { renderRecords(); }
+
+        function resetFilters() {
+            document.getElementById('filterDateStart').value = '';
+            document.getElementById('filterDateEnd').value = '';
+            document.getElementById('filterType').value = '';
+            document.getElementById('filterSearch').value = '';
+            renderRecords();
+        }
+
+        // ============================================================
+        //  待办操作
+        // ============================================================
+        function togglePin(todoId) {
+            const todo = data.todos.find(t => t.id === todoId);
+            if (!todo) { showToast('待办不存在'); return; }
+            todo.pinned = !todo.pinned;
+            saveData();
+            showToast(todo.pinned ? '📌 已置顶' : '取消置顶');
+        }
+
+        function openAddTodo() {
+            const types = getTypeOptions();
+            showModal(`
+                <h3>➕ 添加待办</h3>
+                <div class="sub">手动添加一条待办事项</div>
+                <div class="field">
+                    <label>事件描述 *</label>
+                    <input id="modalTodoEvent" placeholder="例如：review PL">
+                </div>
+                <div class="field">
+                    <label>类型（可输入自定义）</label>
+                    <input list="typeDatalist" id="modalTodoType" placeholder="输入或选择类型" value="">
+                    <datalist id="typeDatalist">${types.map(t => `<option value="${t}">`).join('')}</datalist>
+                    <div class="hint">输入新类型后自动保存</div>
+                </div>
+                <div class="field">
+                    <label>截止日期</label>
+                    <input type="date" id="modalTodoDue" value="${todayStr()}">
+                    <div class="hint">非必填，留空表示无截止日</div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-outline" onclick="closeModal()">取消</button>
+                    <button class="btn-primary" onclick="confirmAddTodo()">添加</button>
+                </div>
+            `);
+            refreshTypeOptions();
+        }
+
+        function confirmAddTodo() {
+            const event = document.getElementById('modalTodoEvent').value.trim();
+            if (!event) { showToast('请输入事件描述'); return; }
+            let type = document.getElementById('modalTodoType').value.trim();
+            if (!type) type = '其他';
+            if (!data.types.includes(type)) data.types.push(type);
+            const due = document.getElementById('modalTodoDue').value || '';
+            data.todos.push({
+                id: genId(),
+                type,
+                event,
+                dueDate: due,
+                createdAt: todayStr(),
+                pinned: false,
+                source: 'manual'
+            });
+            saveData();
+            closeModal();
+            showToast('✅ 待办已添加');
+        }
+
+        function openEditTodo(todoId) {
+            const todo = data.todos.find(t => t.id === todoId);
+            if (!todo) { showToast('待办不存在'); return; }
+            const types = getTypeOptions();
+            showModal(`
+                <h3>✏️ 编辑待办</h3>
+                <div class="sub">修改待办内容</div>
+                <div class="field">
+                    <label>事件描述 *</label>
+                    <input id="modalEditEvent" value="${escapeHtml(todo.event)}">
+                </div>
+                <div class="field">
+                    <label>类型（可输入自定义）</label>
+                    <input list="typeDatalist" id="modalEditType" value="${todo.type}">
+                    <datalist id="typeDatalist">${types.map(t => `<option value="${t}">`).join('')}</datalist>
+                    <div class="hint">输入新类型后自动保存</div>
+                </div>
+                <div class="field">
+                    <label>截止日期</label>
+                    <input type="date" id="modalEditDue" value="${todo.dueDate || ''}">
+                    <div class="hint">非必填，留空表示无截止日</div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-outline" onclick="closeModal()">取消</button>
+                    <button class="btn-primary" onclick="confirmEditTodo(${todoId})">保存</button>
+                </div>
+            `);
+            refreshTypeOptions();
+        }
+
+        function confirmEditTodo(todoId) {
+            const todo = data.todos.find(t => t.id === todoId);
+            if (!todo) { showToast('待办不存在'); return; }
+            const event = document.getElementById('modalEditEvent').value.trim();
+            if (!event) { showToast('请输入事件描述'); return; }
+            let type = document.getElementById('modalEditType').value.trim();
+            if (!type) type = '其他';
+            if (!data.types.includes(type)) data.types.push(type);
+            todo.event = event;
+            todo.type = type;
+            todo.dueDate = document.getElementById('modalEditDue').value || '';
+            saveData();
+            closeModal();
+            showToast('✅ 待办已更新');
+        }
+
+        function openLogTime(todoId) {
+            const todo = data.todos.find(t => t.id === todoId);
+            if (!todo) { showToast('待办不存在'); return; }
+            showModal(`
+                <h3>⏱️ 记录工时</h3>
+                <div class="sub">为「${escapeHtml(todo.event)}」记录今天的工作时间</div>
+                <div class="field">
+                    <label>日期 *</label>
+                    <input type="date" id="modalRecordDate" value="${todayStr()}">
+                    <div class="hint">可修改为过去的日期进行补录</div>
+                </div>
+                <div class="field">
+                    <label>今天花费 (小时) *</label>
+                    <input type="number" id="modalHours" step="0.01" min="0.01" placeholder="例如 1.50">
+                    <div class="hint">可填小数，如 0.50 表示半小时</div>
+                </div>
+                <div class="field">
+                    <label>细节（可选）</label>
+                    <input id="modalDetail" placeholder="例如：处理了某某客户的邮件">
+                    <div class="hint">补充说明，可在历史记录中搜索</div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-outline" onclick="closeModal()">取消</button>
+                    <button class="btn-primary" onclick="confirmLogTime(${todoId})">保存工时</button>
+                </div>
+            `);
+            setTimeout(() => {
+                const el = document.getElementById('modalHours');
+                if (el) el.focus();
+            }, 100);
+        }
+
+        function confirmLogTime(todoId) {
+            const recordDate = document.getElementById('modalRecordDate').value;
+            if (!recordDate) { showToast('请选择日期'); return; }
+            const hours = parseFloat(document.getElementById('modalHours').value);
+            if (isNaN(hours) || hours <= 0) { showToast('请输入有效的小时数（大于0）'); return; }
+            const todo = data.todos.find(t => t.id === todoId);
+            if (!todo) { showToast('待办不存在'); return; }
+            const detail = document.getElementById('modalDetail').value.trim() || '';
+
+            data.records.push({
+                id: 'r' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                date: recordDate,
+                type: todo.type,
+                event: todo.event,
+                hours: Math.round(hours * 100) / 100,
+                detail: detail
+            });
+
+            saveData();
+            closeModal();
+            showToast(`⏱️ 已记录 ${Math.round(hours * 100) / 100} 小时${detail ? '（' + detail + '）' : ''}`);
+        }
+
+        function completeTodo(todoId) {
+            if (!confirm('确认完成此待办？它将移入已完成列表。')) return;
+            const todo = data.todos.find(t => t.id === todoId);
+            if (!todo) { showToast('待办不存在'); return; }
+            if (data.timers[todoId]) {
+                delete data.timers[todoId];
+            }
+
+            data.doneTodos.push({
+                id: todo.id,
+                type: todo.type,
+                event: todo.event,
+                dueDate: todo.dueDate || '',
+                completedAt: new Date().toISOString(),
+                pinned: todo.pinned || false,
+                source: todo.source || 'manual'
+            });
+            data.todos = data.todos.filter(t => t.id !== todoId);
+            saveData();
+            showToast('✅ 已完成！已移入已完成列表');
+        }
+
+        // ============================================================
+        //  历史记录编辑/删除
+        // ============================================================
+        function openEditRecord(recordId) {
+            const record = data.records.find(r => r.id === recordId);
+            if (!record) {
+                showToast('❌ 记录不存在，请刷新后重试');
+                return;
+            }
+            const types = getTypeOptions();
+            showModal(`
+                <h3>✏️ 编辑历史记录</h3>
+                <div class="sub">修改记录内容</div>
+                <div class="field">
+                    <label>事件描述</label>
+                    <input id="modalEditRecordEvent" value="${escapeHtml(record.event)}">
+                </div>
+                <div class="field">
+                    <label>类型</label>
+                    <input list="typeDatalist" id="modalEditRecordType" value="${record.type}">
+                    <datalist id="typeDatalist">${types.map(t => `<option value="${t}">`).join('')}</datalist>
+                </div>
+                <div class="field">
+                    <label>细节</label>
+                    <input id="modalEditRecordDetail" value="${escapeHtml(record.detail || '')}">
+                </div>
+                <div class="field">
+                    <label>耗时 (小时)</label>
+                    <input type="number" id="modalEditRecordHours" step="0.01" min="0.01" value="${(record.hours || 1).toFixed(2)}">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-outline" onclick="closeModal()">取消</button>
+                    <button class="btn-primary" onclick="confirmEditRecord('${recordId}')">保存</button>
+                </div>
+            `);
+            refreshTypeOptions();
+        }
+
+        function confirmEditRecord(recordId) {
+            const record = data.records.find(r => r.id === recordId);
+            if (!record) { showToast('❌ 记录不存在'); return; }
+            const event = document.getElementById('modalEditRecordEvent').value.trim();
+            if (!event) { showToast('请输入事件描述'); return; }
+            let type = document.getElementById('modalEditRecordType').value.trim();
+            if (!type) type = '其他';
+            if (!data.types.includes(type)) data.types.push(type);
+            const hours = parseFloat(document.getElementById('modalEditRecordHours').value);
+            if (isNaN(hours) || hours <= 0) { showToast('请输入有效的小时数'); return; }
+            const detail = document.getElementById('modalEditRecordDetail').value.trim() || '';
+
+            record.event = event;
+            record.type = type;
+            record.hours = Math.round(hours * 100) / 100;
+            record.detail = detail;
+            saveData();
+            closeModal();
+            showToast('✅ 记录已更新');
+        }
+
+        function deleteRecord(recordId) {
+            if (!confirm('确认删除此记录？')) return;
+            const before = data.records.length;
+            data.records = data.records.filter(r => r.id !== recordId);
+            if (data.records.length === before) {
+                showToast('❌ 记录不存在，可能已被删除');
+                return;
+            }
+            saveData();
+            showToast('已删除');
+        }
+
+        function clearAllRecords() {
+            if (!confirm('确认清空所有历史记录？（待办和周期任务不受影响）')) return;
+            data.records = [];
+            saveData();
+            showToast('已清空历史记录');
+        }
+
+        // ============================================================
+        //  周期任务
+        // ============================================================
+        function renderCycles() {
+            const container = document.getElementById('cycleListContainer');
+            if (data.cycles.length === 0) {
+                container.innerHTML = `<div class="empty-state" style="padding:16px 0;">暂无周期任务</div>`;
+                return;
+            }
+
+            const groups = {};
+            data.cycles.forEach(c => {
+                const type = c.type || '其他';
+                if (!groups[type]) groups[type] = [];
+                groups[type].push(c);
+            });
+
+            const typeOrder = ['cgl', 'wjx', '三启', '证照', '其他'];
+            const sortedTypes = Object.keys(groups).sort((a, b) => {
+                const ia = typeOrder.indexOf(a);
+                const ib = typeOrder.indexOf(b);
+                if (ia === -1 && ib === -1) return a.localeCompare(b);
+                if (ia === -1) return 1;
+                if (ib === -1) return -1;
+                return ia - ib;
+            });
+
+            let html = '';
+            sortedTypes.forEach(type => {
+                const items = groups[type];
+                const color = getTypeColor(type);
+                html += `<div class="cycle-group-title" style="color:${color};">${type}</div>`;
+                items.forEach(c => {
+                    let cycleInfo = '';
+                    if (c.cycleType === 'days') cycleInfo = `每 ${c.intervalDays} 天`;
+                    else if (c.cycleType === 'monthlyDay') cycleInfo = `每月 ${c.monthlyDay||1} 号`;
+                    else if (c.cycleType === 'monthlyWorkday') cycleInfo = `每月第 ${c.monthlyWorkdayN||1} 个工作日`;
+                    const status = c.active ? '✅' : '⏸️';
+                    html += `
+                        <div class="cycle-item">
+                            <div class="info">
+                                <span class="tag">${cycleInfo}</span>
+                                <span>${escapeHtml(c.event)}</span>
+                                <span class="status-tag">${status}</span>
+                            </div>
+                            <div class="actions">
+                                <button onclick="openEditCycle(${c.id})" title="编辑">✏️</button>
+                                <button onclick="toggleCycle(${c.id})" title="${c.active ? '停用' : '启用'}">${c.active ? '⏸️' : '▶️'}</button>
+                                <button class="delete-btn" onclick="deleteCycle(${c.id})" title="删除">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+
+            container.innerHTML = html;
+        }
+
+        function toggleCycleMode() {
+            const mode = document.getElementById('cycleMode').value;
+            document.getElementById('cycleDaysGroup').classList.toggle('hidden', mode !== 'days');
+            document.getElementById('cycleMonthlyGroup').classList.toggle('hidden', mode !== 'monthlyDay');
+            document.getElementById('cycleWorkdayGroup').classList.toggle('hidden', mode !== 'monthlyWorkday');
+        }
+
+        function addCycle() {
+            const event = document.getElementById('cycleEvent').value.trim();
+            if (!event) { showToast('请输入事件'); return; }
+            let type = document.getElementById('cycleType').value.trim();
+            if (!type) type = '其他';
+            if (!data.types.includes(type)) data.types.push(type);
+            const mode = document.getElementById('cycleMode').value;
+            const cycle = { id: genId(), event, type, cycleType: mode, active: true };
+            if (mode === 'days') {
+                const firstDate = document.getElementById('cycleFirstDate').value;
+                if (!firstDate) { showToast('请选择首次日期'); return; }
+                const interval = parseInt(document.getElementById('cycleInterval').value);
+                if (!interval || interval < 1) { showToast('请输入有效的间隔天数'); return; }
+                cycle.firstDate = firstDate;
+                cycle.intervalDays = interval;
+            } else if (mode === 'monthlyDay') {
+                const day = parseInt(document.getElementById('cycleMonthlyDay').value);
+                if (!day || day < 1 || day > 28) { showToast('请输入1-28之间的日期'); return; }
+                cycle.monthlyDay = day;
+                cycle.firstDate = todayStr();
+            } else if (mode === 'monthlyWorkday') {
+                const n = parseInt(document.getElementById('cycleWorkdayN').value);
+                if (!n || n < 1 || n > 22) { showToast('请输入1-22之间的数字'); return; }
+                cycle.monthlyWorkdayN = n;
+                cycle.firstDate = todayStr();
+            }
+            data.cycles.push(cycle);
+            saveData();
+            showToast('✅ 周期任务已添加');
+            renderCycles();
+            generateTodosFromCycles(true);
+            renderTodos();
+            document.getElementById('cycleEvent').value = '';
+            document.getElementById('cycleType').value = '';
+        }
+
+        function openEditCycle(cycleId) {
+            const cycle = data.cycles.find(c => c.id === cycleId);
+            if (!cycle) { showToast('周期任务不存在'); return; }
+            let extraFields = '';
+            if (cycle.cycleType === 'days') {
+                extraFields = `
+                    <div class="field"><label>首次日期</label><input type="date" id="editCycleFirstDate" value="${cycle.firstDate || ''}"></div>
+                    <div class="field"><label>间隔天数</label><input type="number" id="editCycleInterval" value="${cycle.intervalDays || 365}" min="1"></div>
+                `;
+            } else if (cycle.cycleType === 'monthlyDay') {
+                extraFields =
+                    `<div class="field"><label>每月几号</label><input type="number" id="editCycleMonthlyDay" value="${cycle.monthlyDay || 1}" min="1" max="28"></div>`;
+            } else if (cycle.cycleType === 'monthlyWorkday') {
+                extraFields =
+                    `<div class="field"><label>第几个工作日</label><input type="number" id="editCycleWorkdayN" value="${cycle.monthlyWorkdayN || 1}" min="1" max="22"></div>`;
+            }
+            showModal(`
+                <h3>✏️ 编辑周期任务</h3>
+                <div class="sub">修改周期任务规则</div>
+                <div class="field"><label>事件 *</label><input id="editCycleEvent" value="${escapeHtml(cycle.event)}"></div>
+                <div class="field"><label>类型</label><input list="typeDatalist" id="editCycleType" value="${cycle.type}"><datalist id="typeDatalist">${getTypeOptions().map(t => `<option value="${t}">`).join('')}</datalist></div>
+                <div class="field">
+                    <label>循环方式</label>
+                    <select id="editCycleMode" onchange="toggleEditCycleMode()">
+                        <option value="days" ${cycle.cycleType==='days'?'selected':''}>按天数循环</option>
+                        <option value="monthlyDay" ${cycle.cycleType==='monthlyDay'?'selected':''}>每月固定日期</option>
+                        <option value="monthlyWorkday" ${cycle.cycleType==='monthlyWorkday'?'selected':''}>每月第 N 个工作日</option>
+                    </select>
+                </div>
+                <div id="editDaysGroup" class="${cycle.cycleType !== 'days' ? 'hidden' : ''}">${cycle.cycleType === 'days' ? extraFields : ''}</div>
+                <div id="editMonthlyGroup" class="${cycle.cycleType !== 'monthlyDay' ? 'hidden' : ''}">${cycle.cycleType === 'monthlyDay' ? extraFields : ''}</div>
+                <div id="editWorkdayGroup" class="${cycle.cycleType !== 'monthlyWorkday' ? 'hidden' : ''}">${cycle.cycleType === 'monthlyWorkday' ? extraFields : ''}</div>
+                <div class="modal-actions">
+                    <button class="btn-outline" onclick="closeModal()">取消</button>
+                    <button class="btn-primary" onclick="confirmEditCycle(${cycleId})">保存</button>
+                </div>
+            `);
+            refreshTypeOptions();
+            const mode = document.getElementById('editCycleMode').value;
+            document.getElementById('editDaysGroup').classList.toggle('hidden', mode !== 'days');
+            document.getElementById('editMonthlyGroup').classList.toggle('hidden', mode !== 'monthlyDay');
+            document.getElementById('editWorkdayGroup').classList.toggle('hidden', mode !== 'monthlyWorkday');
+        }
+
+        function toggleEditCycleMode() {
+            const mode = document.getElementById('editCycleMode').value;
+            document.getElementById('editDaysGroup').classList.toggle('hidden', mode !== 'days');
+            document.getElementById('editMonthlyGroup').classList.toggle('hidden', mode !== 'monthlyDay');
+            document.getElementById('editWorkdayGroup').classList.toggle('hidden', mode !== 'monthlyWorkday');
+            const daysGroup = document.getElementById('editDaysGroup');
+            const monthlyGroup = document.getElementById('editMonthlyGroup');
+            const workdayGroup = document.getElementById('editWorkdayGroup');
+            if (mode === 'days') {
+                daysGroup.innerHTML =
+                    `<div class="field"><label>首次日期</label><input type="date" id="editCycleFirstDate" value="${todayStr()}"></div><div class="field"><label>间隔天数</label><input type="number" id="editCycleInterval" value="365" min="1"></div>`;
+                monthlyGroup.innerHTML = '';
+                workdayGroup.innerHTML = '';
+            } else if (mode === 'monthlyDay') {
+                daysGroup.innerHTML = '';
+                monthlyGroup.innerHTML =
+                    `<div class="field"><label>每月几号</label><input type="number" id="editCycleMonthlyDay" value="1" min="1" max="28"></div>`;
+                workdayGroup.innerHTML = '';
+            } else if (mode === 'monthlyWorkday') {
+                daysGroup.innerHTML = '';
+                monthlyGroup.innerHTML = '';
+                workdayGroup.innerHTML =
+                    `<div class="field"><label>第几个工作日</label><input type="number" id="editCycleWorkdayN" value="1" min="1" max="22"></div>`;
+            }
+        }
+
+        function confirmEditCycle(cycleId) {
+            const cycle = data.cycles.find(c => c.id === cycleId);
+            if (!cycle) { showToast('周期任务不存在'); return; }
+            const event = document.getElementById('editCycleEvent').value.trim();
+            if (!event) { showToast('请输入事件'); return; }
+            cycle.event = event;
+            let type = document.getElementById('editCycleType').value.trim();
+            if (!type) type = '其他';
+            if (!data.types.includes(type)) data.types.push(type);
+            cycle.type = type;
+            const mode = document.getElementById('editCycleMode').value;
+            cycle.cycleType = mode;
+            if (mode === 'days') {
+                const firstDate = document.getElementById('editCycleFirstDate').value;
+                if (!firstDate) { showToast('请选择首次日期'); return; }
+                const interval = parseInt(document.getElementById('editCycleInterval').value);
+                if (!interval || interval < 1) { showToast('请输入有效的间隔天数'); return; }
+                cycle.firstDate = firstDate;
+                cycle.intervalDays = interval;
+                delete cycle.monthlyDay;
+                delete cycle.monthlyWorkdayN;
+            } else if (mode === 'monthlyDay') {
+                const day = parseInt(document.getElementById('editCycleMonthlyDay').value);
+                if (!day || day < 1 || day > 28) { showToast('请输入1-28之间的日期'); return; }
+                cycle.monthlyDay = day;
+                delete cycle.intervalDays;
+                delete cycle.monthlyWorkdayN;
+                if (!cycle.firstDate) cycle.firstDate = todayStr();
+            } else if (mode === 'monthlyWorkday') {
+                const n = parseInt(document.getElementById('editCycleWorkdayN').value);
+                if (!n || n < 1 || n > 22) { showToast('请输入1-22之间的数字'); return; }
+                cycle.monthlyWorkdayN = n;
+                delete cycle.intervalDays;
+                delete cycle.monthlyDay;
+                if (!cycle.firstDate) cycle.firstDate = todayStr();
+            }
+            saveData();
+            closeModal();
+            showToast('✅ 周期任务已更新');
+            renderCycles();
+            generateTodosFromCycles(true);
+            renderTodos();
+        }
+
+        function toggleCycle(id) {
+            const cycle = data.cycles.find(c => c.id === id);
+            if (cycle) {
+                cycle.active = !cycle.active;
+                saveData();
+                renderCycles();
+                showToast(cycle.active ? '▶️ 已启用' : '⏸️ 已停用');
+                generateTodosFromCycles(true);
+                renderTodos();
+            }
+        }
+
+        function deleteCycle(id) {
+            if (!confirm('确认删除此周期任务？')) return;
+            data.cycles = data.cycles.filter(c => c.id !== id);
+            saveData();
+            renderCycles();
+            showToast('已删除');
+            generateTodosFromCycles(true);
+            renderTodos();
+        }
+
+        // ============================================================
+        //  特殊日期管理
+        // ============================================================
+        function openSpecialDateManager() {
+            let listHtml = '';
+            if (data.specialDates.length === 0) {
+                listHtml = `<div class="day-detail-empty">暂无维护的特殊日期</div>`;
+            } else {
+                const sorted = [...data.specialDates].sort((a, b) => a.date.localeCompare(b.date));
+                listHtml = sorted.map(d => {
+                    const tagClass = d.type === 'holiday' ? 'holiday-tag' : 'workday-tag';
+                    const tagText = d.type === 'holiday' ? '🎉 节假日' : '🏢 调休工作日';
+                    return `
+                        <div class="special-date-item">
+                            <div class="date-info">
+                                <span class="date-tag ${tagClass}">${tagText}</span>
+                                <span class="date-text">${d.date}</span>
+                            </div>
+                            <button onclick="removeSpecialDate('${d.date}')">🗑️</button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            showModal(`
+                <h3>📅 特殊日期管理</h3>
+                <div class="sub">维护法定节假日和调休工作日，影响日历显示和“工作日”计算</div>
+                <div class="special-date-list">${listHtml}</div>
+                <div class="special-date-add-row">
+                    <input type="date" id="specialDateInput" value="${todayStr()}">
+                    <select id="specialDateType">
+                        <option value="holiday">🎉 节假日（休息）</option>
+                        <option value="workday">🏢 调休工作日（上班）</option>
+                    </select>
+                    <button onclick="addSpecialDate()">添加</button>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-outline" onclick="closeModal()">关闭</button>
+                </div>
+            `);
+        }
+
+        function addSpecialDate() {
+            const date = document.getElementById('specialDateInput').value;
+            if (!date) { showToast('请选择日期'); return; }
+            const type = document.getElementById('specialDateType').value;
+            if (data.specialDates.find(d => d.date === date)) {
+                showToast('该日期已存在，请先删除再重新添加');
+                return;
+            }
+            data.specialDates.push({ date, type });
+            saveData();
+            closeModal();
+            showToast(`✅ 已添加 ${date} 为 ${type === 'holiday' ? '节假日' : '调休工作日'}`);
+            openSpecialDateManager();
+            renderCalendar();
+        }
+
+        function removeSpecialDate(date) {
+            if (!confirm(`确认移除 ${date} 的特殊标记？`)) return;
+            data.specialDates = data.specialDates.filter(d => d.date !== date);
+            saveData();
+            closeModal();
+            showToast('已移除');
+            openSpecialDateManager();
+            renderCalendar();
+        }
+
+        // ============================================================
+        //  日历
+        // ============================================================
+        let calendarYear = new Date().getFullYear();
+        let calendarMonth = new Date().getMonth();
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const label = document.getElementById('calendarMonthLabel');
+            label.textContent = `${calendarYear}年${calendarMonth + 1}月`;
+
+            const firstDayOfMonth = new Date(calendarYear, calendarMonth, 1).getDay();
+            const startOffset = (firstDayOfMonth === 0) ? 6 : firstDayOfMonth - 1;
+            const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+            const today = todayStr();
+
+            let html = '';
+            const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+            weekdays.forEach(w => { html += `<div class="weekday">${w}</div>`; });
+
+            for (let i = 0; i < startOffset; i++) {
+                html += `<div class="day-cell empty"></div>`;
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr =
+                    `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isToday = dateStr === today;
+                const dayType = getDayType(dateStr);
+                const isHoliday = dayType === 'holiday';
+                const isWorkdayOnRest = dayType === 'workday' && (new Date(dateStr + 'T00:00:00').getDay() === 0 || new Date(
+                    dateStr + 'T00:00:00').getDay() === 6);
+
+                const cellClass = isHoliday ? 'restday' : 'workday';
+                const dayNumberClass = isToday ? 'today' : (isHoliday ? 'holiday' : (isWorkdayOnRest ? 'workday-on-rest' :
+                ''));
+
+                const recordsOnDay = data.records.filter(r => r.date === dateStr);
+                const todosOnDay = data.todos.filter(t => t.dueDate === dateStr);
+                const doneCount = recordsOnDay.length;
+                const todoCount = todosOnDay.length;
+                let statsHtml = '';
+                if (doneCount > 0) statsHtml += `<div class="stat-record">📝 ${doneCount}</div>`;
+                if (todoCount > 0) statsHtml += `<div class="stat-todo">⏳ ${todoCount}</div>`;
+                if (isHoliday) statsHtml += `<div class="stat-holiday">🎉 节假日</div>`;
+                if (isWorkdayOnRest) statsHtml += `<div class="stat-workday-on-rest">🏢 调休上班</div>`;
+
+                html += `
+                    <div class="day-cell ${cellClass}" onclick="openDayDetail('${dateStr}')">
+                        <div class="day-number ${dayNumberClass}">${day}</div>
+                        <div class="day-stats">${statsHtml}</div>
+                    </div>
+                `;
+            }
+            grid.innerHTML = html;
+        }
+
+        function changeMonth(delta) {
+            calendarMonth += delta;
+            if (calendarMonth < 0) { calendarMonth = 11;
+                calendarYear--; }
+            if (calendarMonth > 11) { calendarMonth = 0;
+                calendarYear++; }
+            renderCalendar();
+        }
+
+        function goToday() {
+            const now = new Date();
+            calendarYear = now.getFullYear();
+            calendarMonth = now.getMonth();
+            renderCalendar();
+        }
+
+        function openDayDetail(dateStr) {
+            const records = data.records.filter(r => r.date === dateStr);
+            const todos = data.todos.filter(t => t.dueDate === dateStr);
+            const dayType = getDayType(dateStr);
+            const typeLabel = dayType === 'holiday' ? '🎉 节假日' : '🏢 工作日';
+
+            const existingSpecial = isSpecialDate(dateStr);
+            let specialActionsHtml = '';
+            if (existingSpecial) {
+                specialActionsHtml = `
+                    <button class="btn-outline btn-sm" onclick="removeSpecialDateFromCalendar('${dateStr}')" style="color:#ef4444;">移除特殊标记</button>
+                `;
+            } else {
+                specialActionsHtml = `
+                    <button class="btn-outline btn-sm" onclick="addSpecialDateFromCalendar('${dateStr}', 'holiday')">🎉 设为节假日</button>
+                    <button class="btn-outline btn-sm" onclick="addSpecialDateFromCalendar('${dateStr}', 'workday')">🏢 设为调休工作日</button>
+                `;
+            }
+
+            let recordsHtml = '';
+            if (records.length === 0) {
+                recordsHtml = `<div class="day-detail-empty">📭 当天没有工作记录</div>`;
+            } else {
+                recordsHtml = records.map(r => `
+                    <div class="day-detail-item">
+                        <span><span class="detail-type" style="background:${getTypeColor(r.type)}20; color:${getTypeColor(r.type)};">${getTypeLabel(r.type)}</span> ${escapeHtml(r.event)}${r.detail ? ' <span class="detail-detail">· ' + escapeHtml(r.detail) + '</span>' : ''}</span>
+                        <span class="detail-hours">${(parseFloat(r.hours)||0).toFixed(2)}h</span>
+                    </div>
+                `).join('');
+            }
+
+            let todosHtml = '';
+            if (todos.length === 0) {
+                todosHtml = `<div class="day-detail-empty">✅ 当天没有待办</div>`;
+            } else {
+                todosHtml = todos.map(t => `
+                    <div class="day-detail-item todo-item-detail">
+                        <span><span class="detail-type" style="background:${getTypeColor(t.type)}20; color:${getTypeColor(t.type)};">${getTypeLabel(t.type)}</span> ${escapeHtml(t.event)}</span>
+                        <span style="font-size:11px;color:#94a3b8;">⏳ 待办</span>
+                    </div>
+                `).join('');
+            }
+
+            const displayDate = formatDate(dateStr);
+            showModal(`
+                <h3>📅 ${displayDate} · ${typeLabel}</h3>
+                <div class="sub">工作记录 & 待办</div>
+                <div style="margin-bottom:10px;">
+                    <div style="font-weight:500;font-size:13px;color:#6366f1;margin-bottom:4px;">📝 工作记录 (${records.length})</div>
+                    <div class="day-detail-list">${recordsHtml}</div>
+                </div>
+                <div>
+                    <div style="font-weight:500;font-size:13px;color:#f59e0b;margin-bottom:4px;">⏳ 待办 (${todos.length})</div>
+                    <div class="day-detail-list">${todosHtml}</div>
+                </div>
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid #eef2f6;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+                    ${specialActionsHtml}
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-outline" onclick="closeModal()">关闭</button>
+                </div>
+            `);
+        }
+
+        // ============================================================
+        //  ★★★ 统计页面 ★★★
+        // ============================================================
+        let statsChartPie = null;
+        let statsChartBar = null;
+        let statsCurrentPeriod = 'week';
+
+        function initStatsPage() {
+            // 设置默认日期范围
+            setStatsPeriod('week');
+            updateStats();
+        }
+
+        function setStatsPeriod(period) {
+            statsCurrentPeriod = period;
+            // 更新按钮状态
+            document.querySelectorAll('#statsPeriodGroup button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.period === period);
+            });
+
+            const today = todayStr();
+            const startInput = document.getElementById('statsDateStart');
+            const endInput = document.getElementById('statsDateEnd');
+
+            if (period === 'week') {
+                // 本周：周一 ~ 周日
+                const d = new Date();
+                const day = d.getDay();
+                const diff = (day === 0 ? 6 : day - 1);
+                const monday = new Date(d);
+                monday.setDate(d.getDate() - diff);
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+                startInput.value = monday.toISOString().slice(0, 10);
+                endInput.value = sunday.toISOString().slice(0, 10);
+            } else if (period === 'month') {
+                // 本月：1号 ~ 今天
+                const d = new Date();
+                const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
+                startInput.value = firstDay.toISOString().slice(0, 10);
+                endInput.value = today;
+            } else {
+                // custom: 保留用户已选的值，如果没有则设为今天
+                if (!startInput.value) startInput.value = today;
+                if (!endInput.value) endInput.value = today;
+            }
+            updateStats();
+        }
+
+        function updateStats() {
+            const start = document.getElementById('statsDateStart').value;
+            const end = document.getElementById('statsDateEnd').value;
+            if (!start || !end) {
+                showToast('请选择完整的日期范围');
+                return;
+            }
+            if (start > end) {
+                showToast('开始日期不能晚于结束日期');
+                return;
+            }
+
+            // 筛选记录
+            const filtered = data.records.filter(r => r.date >= start && r.date <= end);
+            const countEl = document.getElementById('statsRecordCount');
+            countEl.textContent = `${filtered.length} 条记录`;
+
+            const emptyEl = document.getElementById('statsEmpty');
+            if (filtered.length === 0) {
+                emptyEl.classList.remove('hidden');
+                document.getElementById('statsCards').style.display = 'none';
+                document.querySelector('.charts-grid').style.display = 'none';
+                return;
+            }
+            emptyEl.classList.add('hidden');
+            document.getElementById('statsCards').style.display = 'grid';
+            document.querySelector('.charts-grid').style.display = 'grid';
+
+            // ---- 总览卡片 ----
+            const totalHours = filtered.reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0);
+            document.getElementById('statsTotal').innerHTML = totalHours.toFixed(2) + '<span class="unit">h</span>';
+
+            // 日均工时（按实际有记录的天数算）
+            const daysSet = new Set(filtered.map(r => r.date));
+            const daysCount = daysSet.size;
+            const dailyAvg = daysCount > 0 ? totalHours / daysCount : 0;
+            document.getElementById('statsDaily').innerHTML = dailyAvg.toFixed(2) + '<span class="unit">h</span>';
+
+            // 最耗时类型
+            const typeMap = {};
+            filtered.forEach(r => {
+                const t = r.type || '其他';
+                typeMap[t] = (typeMap[t] || 0) + (parseFloat(r.hours) || 0);
+            });
+            let topType = '-';
+            let topHours = 0;
+            for (const [t, h] of Object.entries(typeMap)) {
+                if (h > topHours) {
+                    topHours = h;
+                    topType = t;
+                }
+            }
+            document.getElementById('statsTopType').textContent = topType;
+            document.getElementById('statsTopTypeHours').textContent = topHours > 0 ? `${topHours.toFixed(2)}h` : '';
+
+            // ---- 更新图表 ----
+            renderPieChart(filtered);
+            renderBarChart(filtered, start, end);
+        }
+
+        function renderPieChart(filtered) {
+            const ctx = document.getElementById('pieChart').getContext('2d');
+
+            // 按类型汇总
+            const typeMap = {};
+            filtered.forEach(r => {
+                const t = r.type || '其他';
+                typeMap[t] = (typeMap[t] || 0) + (parseFloat(r.hours) || 0);
+            });
+
+            const labels = Object.keys(typeMap);
+            const values = Object.values(typeMap);
+            const colors = labels.map(t => getTypeColor(t));
+
+            if (statsChartPie) {
+                statsChartPie.destroy();
+            }
+
+            statsChartPie = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels.map(l => `${l} (${getTypeLabel(l)})`),
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 11 },
+                                padding: 10,
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                                    return `${context.label}: ${context.parsed.toFixed(2)}h (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '60%',
+                }
+            });
+        }
+
+        function renderBarChart(filtered, start, end) {
+            const ctx = document.getElementById('barChart').getContext('2d');
+
+            // 按天汇总
+            const dayMap = {};
+            const allDays = [];
+            let current = start;
+            while (current <= end) {
+                allDays.push(current);
+                dayMap[current] = 0;
+                current = getDateOffset(current, 1);
+            }
+
+            filtered.forEach(r => {
+                if (dayMap[r.date] !== undefined) {
+                    dayMap[r.date] += (parseFloat(r.hours) || 0);
+                }
+            });
+
+            const labels = allDays.map(d => d.slice(5));
+            const values = allDays.map(d => dayMap[d] || 0);
+
+            if (statsChartBar) {
+                statsChartBar.destroy();
+            }
+
+            statsChartBar = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '工时 (h)',
+                        data: values,
+                        backgroundColor: '#6366f1',
+                        borderColor: '#4f46e5',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(items) {
+                                    const idx = items[0].dataIndex;
+                                    return allDays[idx] || '';
+                                },
+                                label: function(context) {
+                                    return `${context.parsed.y.toFixed(2)}h`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: { size: 10 },
+                                callback: function(value) { return value.toFixed(1) + 'h'; }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: { size: 9 },
+                                maxRotation: 30,
+                                autoSkip: true,
+                                maxTicksLimit: 15,
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        //  导入 / 导出
+        // ============================================================
+        function exportJSON() {
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `worktracker_${todayStr()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('📥 JSON 已导出');
+        }
+
+        function exportCSV() {
+            const headers = ['日期', '类型', '事件', '细节', '耗时(小时)'];
+            const rows = data.records.map(r => [
+                r.date,
+                r.type,
+                `"${r.event.replace(/"/g, '""')}"`,
+                `"${(r.detail || '').replace(/"/g, '""')}"`,
+                (parseFloat(r.hours) || 0).toFixed(2)
+            ]);
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `worktracker_${todayStr()}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('📥 CSV 已导出');
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (!imported.records || !imported.todos || !imported.cycles) {
+                        showToast('❌ 无效的数据文件');
+                        return;
+                    }
+                    if (!confirm('导入将覆盖当前所有数据，确认继续？')) return;
+                    data = imported;
+                    if (!data.types) data.types = ['cgl', 'wjx', '三启', '证照', '其他'];
+                    if (!data.doneTodos) data.doneTodos = [];
+                    if (!data.specialDates) data.specialDates = [];
+                    if (!data.timers) data.timers = {};
+                    if (!data.nextId) data.nextId = 1;
+                    if (data.notes === undefined) data.notes = '';
+                    data.records.forEach(r => { if (!r.id) r.id = 'r' + Date.now() + '_' + Math.random().toString(36)
+                            .slice(2, 6); });
+                    data.todos.forEach(t => { if (!t.source) t.source = 'manual'; });
+                    saveData();
+                    showToast('✅ 数据导入成功');
+                    document.getElementById('importFile').value = '';
+                } catch (err) {
+                    showToast('❌ 文件解析失败');
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ============================================================
+        //  模态框 / Toast
+        // ============================================================
+        function showModal(html) {
+            document.getElementById('modalContainer').innerHTML = `
+                <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
+                    <div class="modal">${html}</div>
+                </div>
+            `;
+        }
+
+        function closeModal() { document.getElementById('modalContainer').innerHTML = ''; }
+
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(el._timer);
+            el._timer = setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
+        // ============================================================
+        //  渲染所有
+        // ============================================================
+        function renderAll() {
+            if (currentPage === 'todo') {
+                renderTodos();
+                loadNotes();
+            }
+            if (currentPage === 'history') {
+                renderStats();
+                renderRecords();
+            }
+            if (currentPage === 'calendar') {
+                renderCalendar();
+            }
+            if (currentPage === 'cycles') {
+                renderCycles();
+            }
+            if (currentPage === 'stats') {
+                updateStats();
+            }
+            document.getElementById('todoCount').textContent = data.todos.length;
+            document.getElementById('recordCount').textContent = data.records.length;
+            updateSidebarBadges();
+            refreshTypeOptions();
+        }
+
+        // ============================================================
+        //  初始化
+        // ============================================================
+        function init() {
+            generateTodosFromCycles(true);
+
+            const filterType = document.getElementById('filterType');
+            filterType.innerHTML = '<option value="">全部类型</option>';
+            getTypeOptions().forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                filterType.appendChild(opt);
+            });
+
+            document.querySelectorAll('#filterDateStart, #filterDateEnd, #filterType, #filterSearch').forEach(el => {
+                el.addEventListener('input', applyFilters);
+                el.addEventListener('change', applyFilters);
+            });
+
+            const today = todayStr();
+            document.getElementById('filterDateStart').value = today;
+            document.getElementById('filterDateEnd').value = today;
+
+            const cycleFirstDate = document.getElementById('cycleFirstDate');
+            if (cycleFirstDate) cycleFirstDate.value = today;
+
+            const notesEl = document.getElementById('notesEditor');
+            if (notesEl) {
+                notesEl.addEventListener('input', saveNotes);
+                notesEl.addEventListener('blur', saveNotes);
+            }
+
+            switchPage('todo');
+            renderStats();
+        }
+
+        async function bootstrap() {
+            setStatus('⏳ 同步中...');
+            const cloud = await fetchCloudData();
+            if (cloud && cloud.records) {
+                data = cloud;
+                setStatus('☁️ 已同步');
+            } else {
+                data = loadLocalData();
+                setStatus('📴 本地模式');
+            }
+            init();
+        }
+
+        bootstrap();
+
+    </script>
+</body>
+</html>
